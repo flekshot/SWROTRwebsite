@@ -1,0 +1,569 @@
+/* ===== ГЛОБАЛЬНЫЕ СТИЛИ ===== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* ===== FOOTER OVERRIDES (global) ===== */
+.site-footer {
+    position: fixed !important;
+    left: 50% !important;
+    bottom: 14px !important;
+    transform: translateX(-50%) !important;
+    z-index: 1200 !important;
+    pointer-events: none;
+    width: auto;
+    text-align: center;
+}
+.footer-credit {
+    display: inline-block;
+    color: rgba(220,220,225,0.60) !important; /* серебристый, полупрозрачный */
+    font-size: 0.95rem;
+    font-family: 'Courier New', monospace;
+    padding: 6px 12px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(220,220,225,0.06);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.6), 0 0 30px rgba(255,255,255,0.02) inset;
+    backdrop-filter: blur(6px) saturate(120%);
+    -webkit-backdrop-filter: blur(6px) saturate(120%);
+    letter-spacing: 0.6px;
+    opacity: 0.95;
+    pointer-events: none;
+}
+.footer-credit::after {
+    content: '';
+    display: block;
+    width: 100%;
+    height: 1px;
+    margin-top: 8px;
+    background: rgba(220,220,225,0.30);
+    border-radius: 2px;
+    opacity: 0.9;
+}
+
+@media (max-width: 550px) {
+    .footer-credit { font-size: 0.78rem; padding: 4px 8px; }
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: 'Courier New', monospace;
+    background: #0a0a0a;
+    background-image: 
+        radial-gradient(circle at 20% 50%, rgba(255, 215, 0, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(0, 255, 255, 0.05) 0%, transparent 50%);
+    background-attachment: fixed;
+    color: #ffd700;
+    min-height: 100vh;
+    overflow-x: hidden;
+    line-height: 1.6;
+    position: relative;
+}
+
+/* 3D Spline фон */
+.spline-bg {
+    position: fixed;
+    inset: 0; /* top:0; right:0; bottom:0; left:0 */
+    width: 100%;
+    height: 100%;
+    border: 0;
+    z-index: -1;
+    opacity: 0.6;
+    pointer-events: none; /* allow clicks through iframe */
+}
+
+/* Cover to visually hide watermark/attribution inside the background iframe.
+   Placed above the iframe (z-index:0) but below page content (container z-index:1).
+   pointer-events: none so it doesn't intercept clicks. */
+.spline-cover {
+    position: fixed;
+    right: 14px;
+    bottom: 14px;
+    width: 140px;
+    height: 28px;
+    background: linear-gradient(180deg, rgba(10,10,10,0.55), rgba(10,10,10,0.3));
+    border-radius: 6px;
+    border: 1px solid rgba(255,215,0,0.06);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.5) inset;
+    z-index: 0; /* above iframe (which is -1) and below main content (1) */
+    pointer-events: none;
+}
+
+/* ===== КОНТЕЙНЕР ===== */
+.container {
+    display: flex;
+    min-height: 100vh;
+    position: relative;
+    z-index: 1;
+}
+
+.main-content {
+    flex: 1;
+    padding: 160px 60px 80px; /* push header down and leave space for cards at bottom */
+    max-width: 100%;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100vh - 40px);
+}
+
+/* Карточки — картинки */
+.cards-section {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 24px;
+}
+
+.info-card {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    text-decoration: none;
+    color: inherit;
+    background: rgba(255,255,255,0.02);
+    padding: 18px;
+    border-radius: 12px;
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.info-card:hover { transform: translateY(-6px); box-shadow: 0 10px 30px rgba(0,0,0,0.6); }
+
+.card-image {
+    width: 140px;
+    height: 100px;
+    flex: 0 0 140px;
+    border-radius: 8px;
+    overflow: hidden;
+    background: linear-gradient(135deg, rgba(255,215,0,0.06), rgba(0,0,0,0.04));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.card-image img.card-thumb {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.placeholder-image {
+    position: absolute;
+    font-size: 28px;
+    color: rgba(255,215,0,0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+}
+
+/* ===== ЗАГОЛОВОК ===== */
+.header {
+    text-align: center;
+    margin-bottom: 100px;
+    animation: slideDown 0.8s ease-out;
+}
+
+.header h1 {
+    font-size: 5rem;
+    color: #ffd700;
+    margin-bottom: 20px;
+    letter-spacing: 8px;
+    font-weight: 900;
+    text-shadow: 0 0 30px #ffd700, 0 0 60px rgba(255, 215, 0, 0.5);
+}
+
+.subtitle {
+    font-size: 1.5rem;
+    color: #ffff00;
+    font-weight: 300;
+    letter-spacing: 1px;
+    margin-bottom: 15px;
+    text-shadow: 0 0 10px #ffff00;
+}
+
+.subsubtitle {
+    font-size: 1.1rem;
+    color: #999;
+    font-weight: 300;
+    letter-spacing: 0.5px;
+}
+
+
+/* ===== КАРТОЧКИ (Glassmorphism) ===== */
+.cards-section {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 28px;
+    /* place cards at bottom of .main-content */
+    margin-top: auto;
+    padding-bottom: 24px;
+}
+
+.info-card {
+    background: linear-gradient(180deg, rgba(255,255,255,0.025), rgba(255,255,255,0.007));
+    border: 1px solid rgba(255,215,0,0.16);
+    border-radius: 14px;
+    padding: 0;
+    transition: transform 0.28s cubic-bezier(.2,.9,.3,1), box-shadow 0.28s ease;
+    backdrop-filter: blur(14px) saturate(150%);
+    -webkit-backdrop-filter: blur(14px) saturate(150%);
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 14px 40px rgba(0,0,0,0.66), 0 0 60px rgba(255,215,0,0.06) inset;
+    text-decoration: none;
+    cursor: pointer;
+    display: block;
+}
+
+/* entrance animation for cards */
+@keyframes riseUp {
+    0% { opacity: 0; transform: translateY(40px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+.cards-section .info-card {
+    opacity: 0;
+    transform: translateY(40px);
+    animation-name: riseUp;
+    animation-duration: 700ms;
+    animation-fill-mode: both;
+    animation-timing-function: cubic-bezier(.2,.9,.3,1);
+}
+.cards-section .info-card:nth-child(1){ animation-delay: 120ms; }
+.cards-section .info-card:nth-child(2){ animation-delay: 260ms; }
+.cards-section .info-card:nth-child(3){ animation-delay: 400ms; }
+.cards-section .info-card:nth-child(4){ animation-delay: 540ms; }
+
+.info-card::after {
+    content: '';
+    position: absolute;
+    top: -40%;
+    left: -30%;
+    width: 60%;
+    height: 200%;
+    background: linear-gradient(120deg, rgba(255,255,255,0.03), rgba(255,255,255,0));
+    transform: rotate(-25deg);
+    pointer-events: none;
+    opacity: 0.78;
+}
+
+.info-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 18px 50px rgba(0,0,0,0.65), 0 0 60px rgba(255,215,0,0.08) inset;
+}
+
+.card-image {
+    width: 100%;
+    height: 220px;
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.03), rgba(255, 215, 0, 0.01));
+    border-bottom: 1px solid rgba(255,215,0,0.06);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.placeholder-image {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(45deg, rgba(255,215,0,0.02), rgba(0,0,0,0.02));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.2rem;
+    color: rgba(255, 215, 0, 0.42);
+}
+
+.card-content {
+    padding: 22px 24px;
+}
+
+.card-content h2 {
+    font-size: 1.4rem;
+    color: #ffd700;
+    font-weight: 700;
+    letter-spacing: 2px;
+    margin-bottom: 15px;
+    text-shadow: 0 0 10px #ffd700;
+}
+
+.card-meta {
+    color: #ffff00;
+    font-size: 0.9rem;
+    margin-bottom: 10px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.card-status {
+    color: #ffd700;
+    font-size: 0.85rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* ===== ВКЛАДКИ СПРАВА ===== */
+.tabs-container {
+    position: fixed;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    gap: 0;
+    z-index: 1000;
+}
+
+.tabs-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 20px 12px;
+    background: rgba(10, 10, 10, 0);
+    border-left: none;
+    border-radius: 0px;
+    backdrop-filter: none;
+    box-shadow: none;
+    transition: all 0.4s ease;
+}
+
+.tabs-container:hover .tabs-nav {
+    background: rgba(10, 10, 10, 0.95);
+    border-left: 2px solid #ffd700;
+    backdrop-filter: blur(10px);
+    box-shadow: -5px 0 20px rgba(255, 215, 0, 0.2);
+    padding: 20px 12px;
+}
+
+.tab-button {
+    width: 50px;
+    height: 50px;
+    border: none;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 0px;
+    font-size: 1.3rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    color: #ffd700;
+    text-decoration: none;
+}
+
+.tabs-container:hover .tab-button {
+    background: rgba(255, 215, 0, 0.1);
+    border: 1px solid #ffd700;
+}
+
+.tab-button:hover {
+    background: rgba(255, 215, 0, 0.15);
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+    transform: scale(1.05);
+}
+
+.tab-button::after {
+    content: attr(title);
+    position: absolute;
+    right: calc(100% + 12px);
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(10, 10, 10, 0.98);
+    color: #ffd700;
+    padding: 8px 12px;
+    border-radius: 6px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    font-size: 0.85rem;
+    border: 1px solid rgba(255,215,0,0.12);
+    font-family: 'Courier New', monospace;
+    letter-spacing: 1px;
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Show label only for the hovered button (appear left of the icon) */
+.tab-button:hover::after {
+    opacity: 1;
+    transform: translateY(-50%) translateX(-6px);
+}
+
+/* ===== АНИМАЦИИ ===== */
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* ===== АДАПТИВНОСТЬ ===== */
+@media (max-width: 1024px) {
+    .header h1 {
+        font-size: 3.5rem;
+    }
+
+/* Footer credit */
+.site-footer {
+    position: fixed;
+    left: 50%;
+    bottom: 14px;
+    transform: translateX(-50%);
+    z-index: 1200;
+    pointer-events: none;
+    width: auto;
+    text-align: center;
+}
+.footer-credit {
+    display: inline-block;
+    color: rgba(220,220,225,0.42);
+    font-size: 0.92rem;
+    font-family: 'Courier New', monospace;
+    padding: 6px 12px;
+    border-radius: 6px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+    border: 1px solid rgba(220,220,225,0.06);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.6), 0 0 30px rgba(255,255,255,0.02) inset;
+    backdrop-filter: blur(6px) saturate(120%);
+    -webkit-backdrop-filter: blur(6px) saturate(120%);
+    letter-spacing: 0.6px;
+    opacity: 0.95;
+}
+
+@media (max-width: 550px) {
+    .footer-credit { font-size: 0.78rem; padding: 4px 8px; }
+}
+
+    .subtitle {
+        font-size: 1.2rem;
+    }
+
+    .cards-section {
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 30px;
+    }
+
+    .main-content {
+        padding: 60px 30px;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-content {
+        padding: 40px 20px;
+    }
+
+    .header {
+        margin-bottom: 60px;
+    }
+
+    .header h1 {
+        font-size: 2.5rem;
+        letter-spacing: 4px;
+    }
+
+    .subtitle {
+        font-size: 1rem;
+    }
+
+    .cards-section {
+        grid-template-columns: 1fr;
+    }
+
+    .tabs-container {
+        display: none;
+    }
+
+    .info-card {
+        padding: 0;
+    }
+
+    .card-header h2 {
+        font-size: 1.2rem;
+    }
+}
+
+/* ===== КАРТОЧКИ ===== */
+
+
+
+
+@media (max-width: 1024px) {
+    .header h1 {
+        font-size: 3.5rem;
+    }
+
+    .subtitle {
+        font-size: 1.2rem;
+    }
+
+    .cards-section {
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 30px;
+    }
+
+    .main-content {
+        padding: 60px 30px;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-content {
+        padding: 40px 20px;
+    }
+
+    .header {
+        margin-bottom: 60px;
+    }
+
+    .header h1 {
+        font-size: 2.5rem;
+        letter-spacing: 4px;
+    }
+
+    .subtitle {
+        font-size: 1rem;
+    }
+
+    .cards-section {
+        grid-template-columns: 1fr;
+    }
+
+    .tabs-container {
+        display: none;
+    }
+
+    .info-card {
+        padding: 0;
+    }
+
+    .card-header h2 {
+        font-size: 1.2rem;
+    }
+}
