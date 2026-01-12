@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Карта Мероприятия</title>
     <link rel="stylesheet" href="styles.css">
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
     <div class="container">
@@ -22,13 +25,174 @@
 
             </div>
 
-            <div style="border: 1px solid #ffd700; padding: 40px;">
-                <h2 style="color: #ffd700; margin-bottom: 20px; font-size: 1.8rem;">📍 ОПИСАНИЕ</h2>
-                <p style="color: #ffff00; line-height: 1.8;">
-                    Это место для размещения подробной информации о NEON GRID A-1. Вы можете добавить здесь описание, характеристики, историю или любую другую информацию, которая считаете важной.
-                </p>
-            </div>
-        </div>
+
+                <div id="map" style="width: 100%; height: 600px; background: #0b0d11; border: 1px solid #ffd700; box-sizing: border-box;"></div>
+
+<script>
+  var map = L.map('map', {
+    crs: L.CRS.Simple,
+    minZoom: -1,
+    maxZoom: 2
+  });
+
+  // Укажи размеры своей картинки здесь для точности (например, 1000 на 500)
+  var bounds = [[0, 0], [1000, 2000]]; 
+  var image = L.imageOverlay('images/map_coruscant_1.png', bounds).addTo(map);
+  map.fitBounds(bounds);
+  map.setMaxBounds(bounds);
+
+  // Функция для создания стильных зон
+  function addZone(coords, color, name, description) {
+    var zone = L.polygon(coords, {
+      color: color,
+      fillColor: color,
+      fillOpacity: 0.2,
+      weight: 3
+    }).addTo(map);
+
+    // Стилизованная карточка (Popup)
+    var popupContent = `
+      <div style="background: #1a1a1a; color: #fff; padding: 10px; border: 1px solid ${color}; border-radius: 5px; min-width: 200px;">
+        <h3 style="margin: 0 0 10px 0; color: ${color}; font-size: 1.2rem; text-transform: uppercase;">${name}</h3>
+        <p style="margin: 0; font-size: 0.9rem; line-height: 1.4; color: #ccc;">${description}</p>
+        <hr style="border: 0; border-top: 1px solid #333; margin: 10px 0;">
+        <span style="font-size: 0.7rem; color: #888;">Сектор: Корусант-Прайм</span>
+      </div>
+    `;
+
+    zone.bindPopup(popupContent, { className: 'custom-popup' });
+    zone.bindTooltip(name, { sticky: true, direction: 'top' });
+
+    // Интерактив при наведении
+    zone.on('mouseover', function () {
+      this.setStyle({ fillOpacity: 0.5, weight: 5 });
+    });
+    zone.on('mouseout', function () {
+      this.setStyle({ fillOpacity: 0.2, weight: 3 });
+    });
+  }
+
+  // --- ДОБАВЛЕНИЕ ЗОН ПО ТВОЕМУ СПИСКУ ---
+// --- ДОБАВЛЕНИЕ ТОЧКИ СПАВНА ---
+
+  // Создаем иконку (опционально, можно использовать стандартную синюю)
+  var spawnIcon = L.divIcon({
+    html: '<div style="background-color: #00f2ff; width: 15px; height: 15px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 10px #00f2ff;"></div>',
+    className: 'custom-spawn-icon',
+    iconSize: [15, 15],
+    iconAnchor: [7, 7]
+  });
+
+  // Добавляем маркер спавна
+  // Координаты [450, 500] — это пример, подправь их под нужную точку на магистрали
+  var spawnPoint = L.marker([440, 650], {icon: spawnIcon}).addTo(map);
+
+  // Привязываем карточку к точке спавна
+  spawnPoint.bindPopup(`
+    <div style="background: #1a1a1a; color: #fff; padding: 10px; border: 1px solid #00f2ff; border-radius: 5px;">
+      <h3 style="margin: 0 0 5px 0; color: #00f2ff; font-size: 1.1rem;">ТОЧКА ПРИБЫТИЯ</h3>
+      <p style="margin: 0; font-size: 0.85rem;">Здесь появляются новые игроки и транспорт.</p>
+    </div>
+  `);
+
+  // Подсказка, которая видна сразу при наведении
+  spawnPoint.bindTooltip("<b>ТОЧКА СПАВНА</b>", { permanent: false, direction: 'right' });
+  // 1. Оранжевый - Зона Порта (Слева сверху)
+  addZone([[750, 100], [950, 100], [950, 700], [750, 700]], "#ffa500", "Зона Порта", "Главный логистический узел. Здесь принимаются грузовые корабли и контрабанда.");
+
+  // 2. Фиолетовый - Катакомбы и Индустриалка (Центр сверху)
+  addZone([[700, 750], [950, 750], [950, 1200], [700, 1200]], "#bf00ff", "Индустриальная Зона", "Заводы по производству дроидов , тяжелых сплавов и материалов для жителей.");
+
+
+  // 4. Ярко-синий - Магистральный путь (Слева снизу)
+  addZone([[300, 200], [600, 200], [600, 800], [300, 800]], "#00f2ff", "Магистральный путь", "Основная трасса для спидеров. Высокий трафик, патрули ПД.");
+
+  // 5. Красный - Полицейский Департамент (Центр)
+  addZone([[450, 850], [600, 850], [600, 1200], [450, 1200]], "#ff0000", "Полицейский Департамент", "Центральный штаб сил безопасности. Вход без пропуска запрещен.");
+
+  // 6. Зеленый - Зона Центрального Банка (Справа центр)
+  addZone([[350, 1400], [550, 1400], [550, 1700], [350, 1700]], "#00ff00", "Центральный Банк", "Финансовое сердце сектора. ");
+
+  // 7. Желтый - Линия коммуникаций (Твой длинный путь)
+  var highwayCoords = [[600,650],[600, 800], [400, 800], [400, 1200], ];
+  L.polyline(highwayCoords, {color: 'yellow', weight: 8, opacity: 0.7}).addTo(map)
+   .bindTooltip("Главный Транспортный Коридор");
+
+  // 8. Белый - Не занятые зоны (Внизу)
+  addZone([[100, 1000], [300, 1000], [300, 1300], [100, 1300]], "#ffffff", "Свободный сектор", "Территория доступна для освоения или временных лагерей.");
+
+  // ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ: Кликни на карту, чтобы увидеть координаты в консоли (F12)
+  map.on('click', function(e) {
+      console.log("[" + Math.round(e.latlng.lat) + ", " + Math.round(e.latlng.lng) + "]");
+  });
+</script>
+
+                <div id="map2" style="width: 100%; height: 600px; background: #0b0d11; border: 1px solid #ffd700; box-sizing: border-box; margin-top: 40px;"></div>
+
+<script>
+  // Инициализация второй карты (не забудь сменить путь к файлу изображения на актуальный для этой карты)
+  var map2 = L.map('map2', {
+    crs: L.CRS.Simple,
+    minZoom: -1,
+    maxZoom: 2
+  });
+
+  var bounds = [[0, 0], [1000, 1500]]; 
+  var image = L.imageOverlay('images/map_coruscant_2.png', bounds).addTo(map2);
+  map2.fitBounds(bounds);
+  map2.setMaxBounds(bounds);
+
+  // Универсальная функция для зон
+  function addZone2(coords, color, name, description) {
+    var zone = L.polygon(coords, {
+      color: color,
+      fillColor: color,
+      fillOpacity: 0.25,
+      weight: 3
+    }).addTo(map2);
+
+    var popupContent = `
+      <div style="background: #1a1a1a; color: #fff; padding: 12px; border: 1px solid ${color}; border-radius: 5px; min-width: 180px;">
+        <h3 style="margin: 0 0 8px 0; color: ${color}; text-transform: uppercase; font-size: 1.1rem;">${name}</h3>
+        <p style="margin: 0; font-size: 0.85rem; line-height: 1.4; color: #ddd;">${description}</p>
+      </div>
+    `;
+
+    zone.bindPopup(popupContent);
+    zone.bindTooltip(name, { sticky: true });
+
+    zone.on('mouseover', function () { this.setStyle({ fillOpacity: 0.5, weight: 4 }); });
+    zone.on('mouseout', function () { this.setStyle({ fillOpacity: 0.25, weight: 3 }); });
+  }
+
+  // --- РАЗМЕТКА ВТОРОЙ КАРТЫ ---
+
+  // 1. Оранжевая зона - Барахолка (Слева)
+  addZone2([[450, 50], [850, 50], [850, 450], [450, 450]], "#ffa500", "Барахолка", "Рынок подержанных запчастей и редких товаров. Здесь можно найти всё — от чипа до турбины.");
+
+  // 2. Фиолетовая зона - Развилка А (Центр)
+  addZone2([[400, 500], [550, 500], [550, 700], [400, 700]], "#bf00ff", "Развилка А", "Ключевой транспортный узел, соединяющий жилые сектора с промышленными.");
+
+  // 3. Зеленая зона - Таможня (Справа)
+  addZone2([[350, 750], [800, 750], [800, 1100], [350, 1100]], "#00ff00", "Таможня", "Пост проверки грузов. Требуется лицензия на торговлю или пропуск.");
+
+  // 4. Ярко-синяя зона - Терминал и склад (Справа снизу)
+  addZone2([[50, 750], [300, 750], [300, 1100], [50, 1100]], "#00f2ff", "Терминал и Склад", "Зона разгрузки крупных контейнеров и долгосрочного хранения.");
+
+  // --- ТОЧКА СПАВНА ---
+  var spawnIcon = L.divIcon({
+    html: '<div style="background-color: #ffd700; width: 12px; height: 12px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 10px #ffd700;"></div>',
+    iconSize: [12, 12],
+    className: 'spawn-point'
+  });
+
+
+  // Для настройки координат кликай по карте и смотри в консоль (F12)
+  map2.on('click', function(e) {
+      console.log("[" + Math.round(e.latlng.lat) + ", " + Math.round(e.latlng.lng) + "]");
+  });
+</script>
+            </div>  
 
         <!-- Вкладки справа -->
         <div class="tabs-container">
