@@ -3,86 +3,363 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ответы</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>Часто Задаваемые Вопросы | Rise of the Republic</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://unpkg.com/lenis@1.1.18/dist/lenis.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Syncopate:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="cursor.css" />
+    <style>
+        :root {
+            --bg-dark: #020202;
+            --accent-primary: #00f2ff;
+            --accent-secondary: #7000ff;
+            --text-main: #ffffff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            cursor: none;
+        }
+
+        html.lenis, html.lenis body {
+            height: auto;
+        }
+
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            overflow-x: hidden;
+            line-height: 1.4;
+        }
+
+        .grid-bg {
+            position: fixed;
+            inset: 0;
+            background-image: 
+                linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+            background-size: 40px 40px;
+            z-index: -2;
+            pointer-events: none;
+        }
+
+        .hero-noise {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            opacity: 0.03;
+            pointer-events: none;
+            background-image: url('https://grainy-gradients.vercel.app/noise.svg');
+        }
+
+        .font-syncopate { font-family: 'Syncopate', sans-serif; }
+
+        .gradient-text {
+            background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .section-reveal {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.6s cubic-bezier(0.19, 1, 0.22, 1);
+            cursor: pointer;
+        }
+
+        .glass-card:hover {
+            border-color: var(--accent-primary);
+            background: rgba(255, 255, 255, 0.04);
+            box-shadow: 0 20px 40px rgba(0, 242, 255, 0.15);
+        }
+
+        .faq-question {
+            color: var(--accent-primary);
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .faq-answer {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 14px;
+            line-height: 1.6;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .glass-card.active .faq-answer {
+            max-height: 300px;
+        }
+
+        .site-footer {
+            position: fixed;
+            left: 50%;
+            bottom: 24px;
+            transform: translateX(-50%);
+            z-index: 1200;
+            pointer-events: none;
+        }
+
+        .footer-credit {
+            display: inline-block;
+            color: rgba(0, 242, 255, 0.6);
+            font-size: 12px;
+            padding: 8px 16px;
+            border: 1px solid rgba(0, 242, 255, 0.2);
+            border-radius: 4px;
+            background: rgba(2, 2, 2, 0.8);
+            backdrop-filter: blur(10px);
+            letter-spacing: 1px;
+            font-weight: 500;
+        }
+
+        .nav-link {
+            color: rgba(255, 255, 255, 0.7);
+            transition: color 0.3s ease;
+        }
+
+        .nav-link:hover {
+            color: var(--accent-primary);
+        }
+
+        .animated-gradient {
+            background: linear-gradient(90deg, #00f2ff, #7000ff, #ff00ff, #ffa500, #00f2ff);
+            background-size: 300% 100%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientShift 8s ease infinite;
+            font-family: 'Syncopate', sans-serif;
+            font-weight: bold;
+            letter-spacing: -0.02em;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% center; }
+            50% { background-position: 100% center; }
+            100% { background-position: 0% center; }
+        }
+
+        h1, h2, h3, h4, h5, h6, p, span, a, div {
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+
+        img, svg {
+            pointer-events: none;
+            user-select: none;
+        }
+    </style>
 </head>
-<body>
-    <div class="container">
-        <div class="main-content">
-            <header class="header">
-                <a href="index.html" style="color: #ffd700; text-decoration: none; font-size: 0.9rem; margin-bottom: 30px; display: inline-block;">← ВЕРНУТЬСЯ</a>
-                <h1>Ответы на Вопросы</h1>
-                <p class="subtitle">Ответы на популярные вопросы</p>
-            </header>
+<body class="antialiased">
+    <div class="grid-bg"></div>
+    <div class="hero-noise"></div>
 
-            <div style="background: linear-gradient(135deg, rgba(255, 215, 0, 0.05), rgba(255, 215, 0, 0.02)); border: 1px solid #ffd700; padding: 40px; margin-bottom: 40px;">
-                <h2 style="color: #ffd700; margin-bottom: 20px; font-size: 1.8rem;">📋 ИНФОРМАЦИЯ О СЕКТОРЕ</h2>
-                <p style="color: #ffff00; line-height: 1.8; margin-bottom: 20px;">
-                    Если вы не нашли свой вопрос , вы всегда можете связаться с проводящим <div id="flekshoter"></div>
-                </p>
-     
-            </div>
-
-        <div style="border: 1px solid #ffd700; padding: 40px; background: linear-gradient(135deg, rgba(255, 215, 0, 0.05), rgba(255, 215, 0, 0.02));">
-            <h2 style="color: #ffd700; margin-bottom: 30px; font-size: 1.8rem;">📍 Касаемо Мероприятия</h2>
-            
-            <div style="margin-bottom: 25px; padding-bottom: 20px; border-bottom: 1px solid rgba(255, 215, 0, 0.3);">
-            <h3 style="color: #ffd700; margin-bottom: 10px; font-size: 1.1rem;">Что может делать мой персонаж на мероприятии?</h3>
-            <p style="color: #ffff00; line-height: 1.8; margin: 0;">Ваш персонаж может взаимодействовать с другими участниками, выполнять миссии, исследовать мир, вступать в организации и фракции, а также участвовать в различных событиях и активностях, в зависимости от желания игрока.</p>
-            </div>
-
-            <div style="margin-bottom: 25px; padding-bottom: 20px; border-bottom: 1px solid rgba(255, 215, 0, 0.3);">
-            <h3 style="color: #ffd700; margin-bottom: 10px; font-size: 1.1rem;">К примеру?</h3>
-            <p style="color: #ffff00; line-height: 1.8; margin: 0;">Я бы открыл свой магазинчик с фруктами и подсововал туда гашиш что бы все ходили обдолбанные и конечно ивентолог поможет все это организовать но последствие меня пугают</p>
-            </div>
-
-            <div style="margin-bottom: 25px; padding-bottom: 20px; border-bottom: 1px solid rgba(255, 215, 0, 0.3);">
-            <h3 style="color: #ffd700; margin-bottom: 10px; font-size: 1.1rem;">Как мне получить доступ к организациям и фракциям?</h3>
-            <p style="color: #ffff00; line-height: 1.8; margin: 0;">Доступ к организациям и фракциям можно получить через внутриигровые задания, выполнение миссий или вступление по приглашению от существующих членов организации.</p>
-            </div>
-
-            <div style="margin-bottom: 25px; padding-bottom: 20px; border-bottom: 1px solid rgba(255, 215, 0, 0.3);">
-            <h3 style="color: #ffd700; margin-bottom: 10px; font-size: 1.1rem;">Какие правила существуют для взаимодействия между игроками?</h3>
-            <p style="color: #ffff00; line-height: 1.8; margin: 0;">Самая главная это не нарушать основные правила сервера такие как ликбезы, своды правил написанные в дискорде сервера. А так, все сколяняется к тому то что бы вы не мешали другим игрокам наслаждаться мероприятием.</p>
-            </div>
-
-            <div style="margin-bottom: 25px; padding-bottom: 20px; border-bottom: 1px solid rgba(255, 215, 0, 0.3);">
-            <h3 style="color: #ffd700; margin-bottom: 10px; font-size: 1.1rem;">Могу ли я создавать свои собственные миссии или события?</h3>
-            <p style="color: #ffff00; line-height: 1.8; margin: 0;">Да, вы можете создавать свои собственные миссии или события, но для этого необходимо согласовать их с организаторами мероприятия, чтобы они соответствовали общей тематике и правилам.</p>
-            </div>
-
-            <div style="margin-bottom: 25px; padding-bottom: 20px; border-bottom: 1px solid rgba(255, 215, 0, 0.3);">
-            <h3 style="color: #ffd700; margin-bottom: 10px; font-size: 1.1rem;">Какие последствия могут быть за нарушение правил мероприятия?</h3>
-            <p style="color: #ffff00; line-height: 1.8; margin: 0;">Нарушение правил мероприятия может привести к различным последствиям, включая предупреждения, временные или постоянные баны, в зависимости от серьезности нарушения.</p>
-            </div>
-
-            <div>
-            <h3 style="color: #ffd700; margin-bottom: 10px; font-size: 1.1rem;">Как я могу связаться с организаторами мероприятия?</h3>
-            <p style="color: #ffff00; line-height: 1.8; margin: 0;">Через Тикеты или же на прямую используя личные сообщение</p>
-            </div>
-        </div>
-
-        <!-- Вкладки справа -->
-        <div class="tabs-container">
-            <nav class="tabs-nav">
-                <a href="index.html" class="tab-button" title="На главную">
-                    <span class="tab-icon">◆</span>
-                </a>
-                <a href="sector1.html" class="tab-button" title="Карта и Маршруты">
-                    <span class="tab-icon">◆</span>
-                </a>
-                <a href="sector2.html" class="tab-button" title="Инструкция гайды">
-                    <span class="tab-icon">◆</span>
-                </a>
-                <a href="sector3.html" class="tab-button" title="Организации Фракции">
-                    <span class="tab-icon">◆</span>
-                </a>
-                <a href="sector4.html" class="tab-button" title="Ответы на вопросы">
-                    <span class="tab-icon">◆</span>
-                </a>
-            </nav>
-        </div>
+    <div id="cursor-outer"></div>
+    <div id="cursor-inner">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3 2L21 12L12 14L14 22L3 2Z" fill="#00f2ff" stroke="white" stroke-width="1.5"/>
+        </svg>
     </div>
+
+    <nav class="fixed top-0 left-0 w-full z-50 px-8 py-6 border-b border-white/10 backdrop-blur-xl bg-black/50">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <a href="index.html" class="animated-gradient text-xl">Городской Ивент</a>
+            <div class="hidden md:flex items-center gap-12">
+                <a href="index.html" class="nav-link">Главная</a>
+                <a href="sector1.html" class="nav-link">Карта</a>
+                <a href="sector2.html" class="nav-link">Гайды</a>
+                <a href="sector3.html" class="nav-link">Фракции</a>
+                <a href="sector4.html" class="nav-link text-cyan-400">FAQ</a>
+            </div>
+        </div>
+    </nav>
+
+    <header class="relative min-h-screen flex items-center justify-center px-8 overflow-hidden pt-24">
+        <div class="absolute inset-0 z-0">
+            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80vw] h-[80vw] border border-cyan-400/[0.03] rounded-full"></div>
+            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60vw] h-[60vw] border border-white/[0.02] rounded-full"></div>
+            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[40vw] h-[40vw] border border-cyan-400/[0.05] rounded-full"></div>
+        </div>
+
+        <div class="max-w-7xl mx-auto w-full relative z-10">
+            <div class="grid grid-cols-12 gap-8">
+                <div class="col-span-12 lg:col-span-4 hero-reveal">
+                    <div class="space-y-12">
+                        <div>
+                            <span class="text-cyan-400 font-bold tracking-[0.4em] uppercase text-[9px] mb-4 block">// FAQ</span>
+                            <p class="text-lg text-neutral-400 leading-relaxed opacity-80">
+                                Найдите ответы на часто задаваемые вопросы о мероприятии.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-span-12 lg:col-span-8 text-center lg:text-right hero-reveal">
+                    <h1 class="font-syncopate text-[clamp(4rem,16vw,12rem)] font-bold leading-[0.75] tracking-tighter mb-4">
+                        ОТВЕТЫ<br>
+                        <span class="gradient-text">НА ВОПРОСЫ</span>
+                    </h1>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <section class="py-24 md:py-32 px-8">
+        <div class="max-w-4xl mx-auto">
+            <div class="space-y-4">
+                <div class="glass-card p-8 section-reveal" onclick="this.classList.toggle('active')">
+                    <div class="faq-question">
+                        <span>Что может делать мой персонаж?</span>
+                        <span style="font-size: 20px;">+</span>
+                    </div>
+                    <div class="faq-answer">
+                        Ваш персонаж может взаимодействовать с другими участниками, выполнять миссии, исследовать мир, вступать в организации и фракции, участвовать в различных событиях и активностях в зависимости от желания игрока.
+                    </div>
+                </div>
+
+                <div class="glass-card p-8 section-reveal" onclick="this.classList.toggle('active')">
+                    <div class="faq-question">
+                        <span>Как получить доступ к организациям?</span>
+                        <span style="font-size: 20px;">+</span>
+                    </div>
+                    <div class="faq-answer">
+                        Доступ к организациям и фракциям можно получить через внутриигровые задания, выполнение миссий или вступление по приглашению от существующих членов организации.
+                    </div>
+                </div>
+
+                <div class="glass-card p-8 section-reveal" onclick="this.classList.toggle('active')">
+                    <div class="faq-question">
+                        <span>Какие правила для взаимодействия между игроками?</span>
+                        <span style="font-size: 20px;">+</span>
+                    </div>
+                    <div class="faq-answer">
+                        Самая главная - не нарушать основные правила сервера такие как ликбезы и своды правил написанные в дискорде сервера. Главное - не мешайте другим игрокам наслаждаться мероприятием.
+                    </div>
+                </div>
+
+                <div class="glass-card p-8 section-reveal" onclick="this.classList.toggle('active')">
+                    <div class="faq-question">
+                        <span>Могу ли я создавать свои миссии?</span>
+                        <span style="font-size: 20px;">+</span>
+                    </div>
+                    <div class="faq-answer">
+                        Да, вы можете создавать свои собственные миссии или события, но для этого необходимо согласовать их с организаторами мероприятия, чтобы они соответствовали общей тематике и правилам.
+                    </div>
+                </div>
+
+                <div class="glass-card p-8 section-reveal" onclick="this.classList.toggle('active')">
+                    <div class="faq-question">
+                        <span>Какие последствия за нарушение правил?</span>
+                        <span style="font-size: 20px;">+</span>
+                    </div>
+                    <div class="faq-answer">
+                        Нарушение правил мероприятия может привести к различным последствиям, включая предупреждения, временные или постоянные баны, в зависимости от серьезности нарушения.
+                    </div>
+                </div>
+
+                <div class="glass-card p-8 section-reveal" onclick="this.classList.toggle('active')">
+                    <div class="faq-question">
+                        <span>Как связаться с организаторами?</span>
+                        <span style="font-size: 20px;">+</span>
+                    </div>
+                    <div class="faq-answer">
+                        Вы можете связаться через тикеты в системе поддержки или отправить личное сообщение администраторам в дискорде мероприятия.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="site-footer">
+        <div class="footer-credit">Rise of the Republic™ • Городской Ивент</div>
+    </footer>
+
     <script src="script.js"></script>
+    <script>
+        const cursorOuter = document.getElementById('cursor-outer');
+        const cursorInner = document.getElementById('cursor-inner');
+        
+        let mouseX = 0, mouseY = 0;
+        let outerX = 0, outerY = 0;
+        
+        window.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+            cursorInner.style.transform = `translate(${mouseX - 12}px, ${mouseY - 12}px)`;
+        });
+        
+        function animateCursor() {
+            outerX += (mouseX - outerX) * 0.15;
+            outerY += (mouseY - outerY) * 0.15;
+            cursorOuter.style.transform = `translate(${outerX - 20}px, ${outerY - 20}px)`;
+            requestAnimationFrame(animateCursor);
+        }
+        animateCursor();
+
+        const links = document.querySelectorAll('a, button, .glass-card, .group');
+        links.forEach(link => {
+            link.addEventListener('mouseenter', () => {
+                document.body.classList.add('cursor-hover');
+            });
+            link.addEventListener('mouseleave', () => {
+                document.body.classList.remove('cursor-hover');
+            });
+        });
+
+        const lenis = new Lenis({
+            duration: 1.2,
+            easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+        });
+        function raf(time) {
+            lenis.raf(time);
+            requestAnimationFrame(raf);
+        }
+        requestAnimationFrame(raf);
+
+        gsap.registerPlugin(ScrollTrigger);
+        gsap.from(".hero-reveal", {
+            y: 40,
+            opacity: 0,
+            duration: 1.2,
+            stagger: 0.2,
+            ease: "power3.out",
+            clearProps: "all"
+        });
+
+        gsap.utils.toArray('.section-reveal').forEach(el => {
+            gsap.to(el, {
+                scrollTrigger: {
+                    trigger: el,
+                    start: "top 90%",
+                    toggleActions: "play none none reverse"
+                },
+                y: 0,
+                opacity: 1,
+                duration: 0.8,
+                ease: "power2.out"
+            });
+        });
+
+        window.addEventListener('load', () => ScrollTrigger.refresh());
+    </script>
 </body>
 </html>

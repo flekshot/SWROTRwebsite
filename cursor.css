@@ -1,0 +1,48 @@
+/* Custom Cursor Styles */
+#cursor-outer {
+    width: 40px;
+    height: 40px;
+    border: 1px solid rgba(0, 242, 255, 0.1);
+    position: fixed;
+    pointer-events: none;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+#cursor-outer::before, #cursor-outer::after {
+    content: '';
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border: 1px solid var(--accent-primary);
+    opacity: 0.5;
+}
+
+#cursor-outer::before { 
+    top: 0; 
+    left: 0; 
+    border-right: 0; 
+    border-bottom: 0; 
+}
+
+#cursor-outer::after { 
+    bottom: 0; 
+    right: 0; 
+    border-left: 0; 
+    border-top: 0; 
+}
+
+#cursor-inner {
+    display: none;
+}
+
+.cursor-hover #cursor-outer {
+    width: 60px;
+    height: 60px;
+    border-color: var(--accent-primary);
+    background: rgba(0, 242, 255, 0.05);
+    transform: rotate(90deg);
+}

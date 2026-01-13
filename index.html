@@ -3,73 +3,416 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Городской Ивент</title>
-    <!-- Preconnect to Spline to reduce iframe load latency -->
-    <link rel="preconnect" href="https://my.spline.design">
-    <link rel="stylesheet" href="styles.css">
+    <title>Городской Ивент | Rise of the Republic</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://unpkg.com/lenis@1.1.18/dist/lenis.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Syncopate:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="cursor.css" />
+    <style>
+        :root {
+            --bg-dark: #020202;
+            --accent-primary: #00f2ff;
+            --accent-secondary: #7000ff;
+            --text-main: #ffffff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            cursor: none;
+        }
+
+        html.lenis, html.lenis body {
+            height: auto;
+        }
+
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            overflow-x: hidden;
+            line-height: 1.4;
+        }
+
+        /* Grid Background */
+        .grid-bg {
+            position: fixed;
+            inset: 0;
+            background-image: 
+                linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+            background-size: 40px 40px;
+            z-index: -2;
+            pointer-events: none;
+        }
+
+        .hero-noise {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            opacity: 0.03;
+            pointer-events: none;
+            background-image: url('https://grainy-gradients.vercel.app/noise.svg');
+        }
+
+        .font-syncopate { font-family: 'Syncopate', sans-serif; }
+
+        .gradient-text {
+            background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .glow-text {
+            text-shadow: 0 0 20px rgba(0, 242, 255, 0.5), 0 0 40px rgba(112, 0, 255, 0.3);
+        }
+
+        .section-reveal {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.6s cubic-bezier(0.19, 1, 0.22, 1);
+        }
+
+        .glass-card:hover {
+            border-color: var(--accent-primary);
+            background: rgba(255, 255, 255, 0.04);
+            box-shadow: 0 20px 40px rgba(0, 242, 255, 0.15);
+        }
+
+        .hud-line {
+            height: 1px;
+            background: linear-gradient(90deg, var(--accent-primary), transparent);
+        }
+
+        .site-footer {
+            position: fixed;
+            left: 50%;
+            bottom: 24px;
+            transform: translateX(-50%);
+            z-index: 1200;
+            pointer-events: none;
+        }
+
+        .footer-credit {
+            display: inline-block;
+            color: rgba(0, 242, 255, 0.6);
+            font-size: 12px;
+            padding: 8px 16px;
+            border: 1px solid rgba(0, 242, 255, 0.2);
+            border-radius: 4px;
+            background: rgba(2, 2, 2, 0.8);
+            backdrop-filter: blur(10px);
+            letter-spacing: 1px;
+            font-weight: 500;
+        }
+
+        .hero-reveal {
+            opacity: 1;
+            animation: none;
+        }
+
+        .countdown-box {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .countdown-box::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(0, 242, 255, 0.1), transparent);
+            opacity: 0;
+            transition: opacity 0.6s ease;
+        }
+
+        .countdown-box:hover::after {
+            opacity: 1;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .text-clamp-xl {
+                font-size: clamp(2.5rem, 10vw, 6rem) !important;
+            }
+        }
+    </style>
 </head>
-<body>
-    <!-- Spline фон (фоновое iframe, клики идут по сайту). loading removed for faster render -->
-   
-    <div class="container">
-        <!-- Основной контент -->
-        <div class="main-content">
-            <header class="header">
-                <h1>Городской Ивент</h1>
-                <p class="subtitle">Мини гайд по ивенту и Ответы на вопросы</p>
-                <p class="subsubtitle">Здесь ограничение только в фантазии игрока</p>
-            </header>
+<body class="antialiased">
+    <!-- Background Elements -->
+    <div class="grid-bg"></div>
+    <div class="hero-noise"></div>
 
-            <section class="cards-section">
-                <a href="sector1.html" class="info-card">
-                    <div class="card-image">
-                        <img src="images/map.png" alt="Гайды" class="card-thumb">
-                        <div class="placeholder-image"></div>
+    <!-- Cursor Elements -->
+    <div id="cursor-outer"></div>
+    <div id="cursor-inner">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3 2L21 12L12 14L14 22L3 2Z" fill="#00f2ff" stroke="white" stroke-width="1.5"/>
+        </svg>
+    </div>
+
+    <!-- HERO SECTION -->
+    <header class="relative min-h-screen flex items-center justify-center px-8 overflow-hidden">
+        <!-- Background Circles -->
+        <div class="absolute inset-0 z-0">
+            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80vw] h-[80vw] border border-cyan-400/[0.03] rounded-full"></div>
+            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60vw] h-[60vw] border border-white/[0.02] rounded-full"></div>
+            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[40vw] h-[40vw] border border-cyan-400/[0.05] rounded-full"></div>
+        </div>
+
+        <!-- Vertical Side HUD -->
+        <div class="absolute left-10 top-1/2 -translate-y-1/2 flex flex-col gap-20 hero-reveal opacity-20 hidden lg:flex">
+            <div style="writing-mode: vertical-rl; text-orientation: mixed;" class="font-syncopate text-[8px] font-bold tracking-[1em] uppercase">Urban_Sector_01</div>
+            <div class="w-px h-32 bg-gradient-to-b from-cyan-400 to-transparent mx-auto"></div>
+            <div style="writing-mode: vertical-rl; text-orientation: mixed;" class="font-syncopate text-[8px] font-bold tracking-[1em] uppercase">Auth_Verified_2026</div>
+        </div>
+
+        <div class="max-w-7xl mx-auto w-full grid grid-cols-12 gap-8 items-center relative z-10">
+            <!-- Left Info Block -->
+            <div class="col-span-12 lg:col-span-4 order-2 lg:order-1 hero-reveal">
+                <div class="space-y-12">
+                    <div>
+                        <span class="text-cyan-400 font-bold tracking-[0.4em] uppercase text-[9px] mb-4 block">// Городской Гайд</span>
+                        <p class="text-lg text-neutral-400 leading-relaxed opacity-80">
+                            Полное руководство по городскому ивенту. Карты, гайды, фракции и ответы на все вопросы в одном месте.
+                        </p>
                     </div>
-                    <div class="card-content">
-                        <h2>Карта и Маршруты</h2>
-                        <p class="card-meta">Исследуйте карту и найдите себе новый дом</p>
+                    <div class="flex flex-col gap-4">
+                        <a href="sector1.html" class="bg-cyan-400 text-black py-5 px-10 text-[11px] font-bold tracking-[0.3em] uppercase hover:bg-white transition-all w-fit">
+                            Начать Исследование
+                        </a>
+                        <div class="flex items-center gap-4 text-white/30">
+                            <div class="w-12 h-px bg-white/10"></div>
+                            <span class="text-[8px] font-bold tracking-widest uppercase">Добро пожаловать</span>
+                        </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Center Massive Title -->
+            <div class="col-span-12 lg:col-span-8 order-1 lg:order-2 text-center lg:text-right hero-reveal">
+                <div class="relative inline-block">
+                    <span class="absolute -top-12 right-0 text-cyan-400 font-syncopate text-xs font-bold tracking-[0.5em] opacity-40 uppercase">Global_Event</span>
+                    <h1 class="font-syncopate text-[clamp(4rem,16vw,12rem)] font-bold leading-[0.75] tracking-tighter mb-4">
+                        ГОРОДСКОЙ<br>
+                        <span class="gradient-text">ИВЕНТ</span>
+                    </h1>
+                    <div class="flex justify-center lg:justify-end gap-2 mt-8">
+                        <div class="px-4 py-1 bg-white/5 border border-white/10 text-[9px] font-bold tracking-widest uppercase">Guide_v1</div>
+                        <div class="px-4 py-1 bg-cyan-400 text-black text-[9px] font-bold tracking-widest uppercase">Live_2026</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom HUD Stats -->
+        <div class="absolute bottom-12 left-1/2 -translate-x-1/2 w-full max-w-7xl px-8 flex justify-between items-end hero-reveal border-t border-white/5 pt-8 hidden md:flex">
+            <div class="flex gap-16">
+                <div class="flex flex-col gap-2">
+                    <span class="text-[8px] font-bold tracking-widest text-neutral-600 uppercase">Status</span>
+                    <span class="text-xs font-syncopate font-bold text-cyan-400">Active</span>
+                </div>
+                <div class="flex flex-col gap-2">
+                    <span class="text-[8px] font-bold tracking-widest text-neutral-600 uppercase">Страницы доступные</span>
+                    <span class="text-xs font-syncopate font-bold text-white">4 </span>
+                </div>
+                <div class="flex flex-col gap-2">
+                    <span class="text-[8px] font-bold tracking-widest text-neutral-600 uppercase">Планета</span>
+                    <span class="text-xs font-syncopate font-bold text-white">Корусант</span>
+                </div>
+            </div>
+
+        </div>
+    </header>
+
+    <!-- COUNTDOWN SECTION -->
+    <section class="py-24 md:py-32 px-8 border-y border-white/5 overflow-hidden">
+        <div class="max-w-7xl mx-auto">
+            <div class="grid grid-cols-12 gap-8 mb-20">
+                <div class="col-span-12 lg:col-span-4 section-reveal">
+                    <span class="text-cyan-400 font-bold tracking-[0.3em] uppercase text-[9px] mb-4 block">Sequence Sync</span>
+                    <h2 class="font-syncopate text-4xl font-bold tracking-tighter uppercase mb-6 leading-none">Event <br>Countdown</h2>
+                    <p class="text-neutral-500 text-sm max-w-xs opacity-70">Synchronizing global event nodes. Подготавливайтесь к началу события.</p>
+                </div>
+                
+                <div class="col-span-12 lg:col-span-8 grid grid-cols-2 md:grid-cols-4 gap-4 section-reveal">
+                    <div class="countdown-box h-48 flex flex-col justify-center items-center border border-white/5 bg-white/5 relative group">
+                        <div id="days" class="text-5xl md:text-6xl font-bold font-syncopate leading-none tracking-tighter mb-2">00</div>
+                        <div class="text-[8px] tracking-[0.4em] uppercase opacity-40">Days</div>
+                    </div>
+                    <div class="countdown-box h-48 flex flex-col justify-center items-center border border-white/5 bg-transparent relative group">
+                        <div id="hours" class="text-5xl md:text-6xl font-bold font-syncopate leading-none tracking-tighter mb-2">00</div>
+                        <div class="text-[8px] tracking-[0.4em] uppercase opacity-40">Hours</div>
+                    </div>
+                    <div class="countdown-box h-48 flex flex-col justify-center items-center border border-white/5 bg-transparent relative group">
+                        <div id="minutes" class="text-5xl md:text-6xl font-bold font-syncopate leading-none tracking-tighter mb-2">00</div>
+                        <div class="text-[8px] tracking-[0.4em] uppercase opacity-40">Mins</div>
+                    </div>
+                    <div class="countdown-box h-48 flex flex-col justify-center items-center border border-white/5 bg-white/5 relative group">
+                        <div id="seconds" class="text-5xl md:text-6xl font-bold font-syncopate leading-none tracking-tighter mb-2 text-cyan-400">00</div>
+                        <div class="text-[8px] tracking-[0.4em] uppercase opacity-40">Secs</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTORS SECTION -->
+    <section class="py-24 md:py-32 px-8">
+        <div class="max-w-7xl mx-auto">
+            <div class="flex flex-col md:flex-row justify-between items-end mb-24 section-reveal">
+                <h2 class="font-syncopate text-5xl md:text-7xl font-bold tracking-tighter uppercase leading-none">Sectors <br><span class="text-neutral-900">Available</span></h2>
+                <p class="text-neutral-500 text-sm max-w-xs mt-6 md:mt-0 opacity-70">Все необходимые разделы в одном месте.</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <a href="sector1.html" class="glass-card p-10 section-reveal group cursor-pointer hover:border-cyan-400/40">
+                    <div class="text-4xl font-syncopate font-bold text-neutral-900 mb-8">01</div>
+                    <h3 class="font-syncopate text-lg font-bold mb-4 uppercase">Карта и Маршруты</h3>
+                    <p class="text-neutral-500 text-sm leading-relaxed mb-8">Исследуйте карту города и найдите идеальное место для вашего персонажа. Каждый район имеет свои особенности.</p>
+                    <div class="w-10 h-px bg-cyan-400"></div>
                 </a>
-
-                <a href="sector2.html" class="info-card">
-                    <div class="card-image">
-                        <img src="images/guides.jpg" alt="Гайды" class="card-thumb">
-                        <div class="placeholder-image"></div>
-                    </div>
-                    <div class="card-content">
-                        <h2>Инструкция и Гайды</h2>
-                        <p class="card-meta">Основной свод действий для отличного опыта</p>
-                    </div>
+                <a href="sector2.html" class="glass-card p-10 section-reveal group cursor-pointer hover:border-cyan-400/40 md:mt-12">
+                    <div class="text-4xl font-syncopate font-bold text-neutral-900 mb-8">02</div>
+                    <h3 class="font-syncopate text-lg font-bold mb-4 uppercase">Инструкция и Гайды</h3>
+                    <p class="text-neutral-500 text-sm leading-relaxed mb-8">Основной свод действий и советов для отличного опыта игры. Узнайте все механики события.</p>
+                    <div class="w-10 h-px bg-cyan-400"></div>
                 </a>
-
-                <a href="sector3.html" class="info-card">
-                    <div class="card-image">
-                        <img src="images/factions.jpeg" alt="Фракции" class="card-thumb">
-                        <div class="placeholder-image"></div>
-                    </div>
-                    <div class="card-content">
-                        <h2>Организации и Фракции</h2>
-                    </div>
+                <a href="sector3.html" class="glass-card p-10 section-reveal group cursor-pointer hover:border-cyan-400/40">
+                    <div class="text-4xl font-syncopate font-bold text-neutral-900 mb-8">03</div>
+                    <h3 class="font-syncopate text-lg font-bold mb-4 uppercase">Организации и Фракции</h3>
+                    <p class="text-neutral-500 text-sm leading-relaxed mb-8">Присоединяйтесь к могущественным организациям и фракциям города для большего влияния.</p>
+                    <div class="w-10 h-px bg-cyan-400"></div>
                 </a>
-
-                <a href="sector4.html" class="info-card">
-                    <div class="card-image">
-                        <img src="images/faq.jpg" alt="FAQ" class="card-thumb">
-                        <div class="placeholder-image"></div>
-                    </div>
-                    <div class="card-content">
-                        <h2>Ответы на вопросы</h2>
-                    </div>
+                <a href="sector4.html" class="glass-card p-10 section-reveal group cursor-pointer hover:border-cyan-400/40 md:mt-12">
+                    <div class="text-4xl font-syncopate font-bold text-neutral-900 mb-8">04</div>
+                    <h3 class="font-syncopate text-lg font-bold mb-4 uppercase">Часто Задаваемые Вопросы</h3>
+                    <p class="text-neutral-500 text-sm leading-relaxed mb-8">Найдите ответы на все ваши вопросы о событии, правилах и механиках игры.</p>
+                    <div class="w-10 h-px bg-cyan-400"></div>
                 </a>
-            </section>
-        </div> <!-- .main-content -->
-        <!-- Вкладки справа -->
+            </div>
+        </div>
+    </section>
 
-    </div> <!-- .container -->
+    <footer class="site-footer">
+        <div class="footer-credit">Rise of the Republic™ • Городской Ивент</div>
+    </footer>
+
     <script src="script.js"></script>
-        <footer class="site-footer">
-            <div class="footer-credit" >Создано при поддержке ивентологии Rise of the Republic</div>
-        </footer>
+    <script>
+        // Tactical Cursor Implementation
+        const cursorOuter = document.getElementById('cursor-outer');
+        const cursorInner = document.getElementById('cursor-inner');
+        
+        let mouseX = 0, mouseY = 0;
+        let outerX = 0, outerY = 0;
+        
+        window.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+            cursorInner.style.transform = `translate(${mouseX - 12}px, ${mouseY - 12}px)`;
+        });
+        
+        function animateCursor() {
+            outerX += (mouseX - outerX) * 0.15;
+            outerY += (mouseY - outerY) * 0.15;
+            cursorOuter.style.transform = `translate(${outerX - 20}px, ${outerY - 20}px)`;
+            requestAnimationFrame(animateCursor);
+        }
+        animateCursor();
+
+        // Hover effects
+        const links = document.querySelectorAll('a, button, .glass-card, .group, .countdown-box');
+        links.forEach(link => {
+            link.addEventListener('mouseenter', () => {
+                document.body.classList.add('cursor-hover');
+            });
+            link.addEventListener('mouseleave', () => {
+                document.body.classList.remove('cursor-hover');
+            });
+        });
+
+        // Lenis smooth scroll
+        const lenis = new Lenis({
+            duration: 1.2,
+            easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+            direction: 'vertical',
+            smoothWheel: true,
+            wheelMultiplier: 1,
+            touchMultiplier: 2,
+        });
+        function raf(time) {
+            lenis.raf(time);
+            requestAnimationFrame(raf);
+        }
+        requestAnimationFrame(raf);
+
+        // GSAP animations
+        gsap.registerPlugin(ScrollTrigger);
+
+        gsap.from(".hero-reveal", {
+            y: 40,
+            opacity: 0,
+            duration: 1.2,
+            stagger: 0.2,
+            ease: "power3.out",
+            clearProps: "all"
+        });
+
+        gsap.utils.toArray('.section-reveal').forEach(el => {
+            gsap.to(el, {
+                scrollTrigger: {
+                    trigger: el,
+                    start: "top 90%",
+                    toggleActions: "play none none reverse"
+                },
+                y: 0,
+                opacity: 1,
+                duration: 0.8,
+                ease: "power2.out"
+            });
+        });
+
+        // Countdown Timer
+        const countdown = () => {
+            const countDate = new Date('Feb 14, 2026 00:00:00').getTime();
+            const now = new Date().getTime();
+            const gap = countDate - now;
+            const second = 1000;
+            const minute = second * 60;
+            const hour = minute * 60;
+            const day = hour * 24;
+
+            if (document.getElementById('days')) {
+                document.getElementById('days').innerText = Math.floor(gap / day).toString().padStart(2, '0');
+                document.getElementById('hours').innerText = Math.floor((gap % day) / hour).toString().padStart(2, '0');
+                document.getElementById('minutes').innerText = Math.floor((gap % hour) / minute).toString().padStart(2, '0');
+                document.getElementById('seconds').innerText = Math.floor((gap % minute) / second).toString().padStart(2, '0');
+            }
+        };
+        setInterval(countdown, 1000);
+        countdown();
+
+        window.addEventListener('load', () => ScrollTrigger.refresh());
+    </script>
 </body>
 </html>

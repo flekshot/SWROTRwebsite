@@ -3,148 +3,320 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Гайды</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>Инструкция и Гайды | Rise of the Republic</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://unpkg.com/lenis@1.1.18/dist/lenis.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Syncopate:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="cursor.css" />
+    <style>
+        :root {
+            --bg-dark: #020202;
+            --accent-primary: #00f2ff;
+            --accent-secondary: #7000ff;
+            --text-main: #ffffff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            cursor: none;
+        }
+
+        html.lenis, html.lenis body {
+            height: auto;
+        }
+
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            overflow-x: hidden;
+            line-height: 1.4;
+        }
+
+        .grid-bg {
+            position: fixed;
+            inset: 0;
+            background-image: 
+                linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+            background-size: 40px 40px;
+            z-index: -2;
+            pointer-events: none;
+        }
+
+        .hero-noise {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            opacity: 0.03;
+            pointer-events: none;
+            background-image: url('https://grainy-gradients.vercel.app/noise.svg');
+        }
+
+        .font-syncopate { font-family: 'Syncopate', sans-serif; }
+
+        .gradient-text {
+            background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .section-reveal {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.6s cubic-bezier(0.19, 1, 0.22, 1);
+        }
+
+        .glass-card:hover {
+            border-color: var(--accent-primary);
+            background: rgba(255, 255, 255, 0.04);
+            box-shadow: 0 20px 40px rgba(0, 242, 255, 0.15);
+        }
+
+        .site-footer {
+            position: fixed;
+            left: 50%;
+            bottom: 24px;
+            transform: translateX(-50%);
+            z-index: 1200;
+            pointer-events: none;
+        }
+
+        .footer-credit {
+            display: inline-block;
+            color: rgba(0, 242, 255, 0.6);
+            font-size: 12px;
+            padding: 8px 16px;
+            border: 1px solid rgba(0, 242, 255, 0.2);
+            border-radius: 4px;
+            background: rgba(2, 2, 2, 0.8);
+            backdrop-filter: blur(10px);
+            letter-spacing: 1px;
+            font-weight: 500;
+        }
+
+        .nav-link {
+            color: rgba(255, 255, 255, 0.7);
+            transition: color 0.3s ease;
+        }
+
+        .nav-link:hover {
+            color: var(--accent-primary);
+        }
+
+        .animated-gradient {
+            background: linear-gradient(90deg, #00f2ff, #7000ff, #ff00ff, #ffa500, #00f2ff);
+            background-size: 300% 100%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientShift 8s ease infinite;
+            font-family: 'Syncopate', sans-serif;
+            font-weight: bold;
+            letter-spacing: -0.02em;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% center; }
+            50% { background-position: 100% center; }
+            100% { background-position: 0% center; }
+        }
+
+        h1, h2, h3, h4, h5, h6, p, span, a, div {
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+
+        img, svg {
+            pointer-events: none;
+            user-select: none;
+        }
+    </style>
 </head>
-<body>
-    <div class="container">
-        <div class="main-content">
-            <header class="header">
-                <a href="index.html" style="color: #ffd700; text-decoration: none; font-size: 0.9rem; margin-bottom: 30px; display: inline-block;">← ВЕРНУТЬСЯ</a>
-                <h1>Инструкция и Гайды</h1>
-                <p class="subtitle"></p>
-            </header>
+<body class="antialiased">
+    <div class="grid-bg"></div>
+    <div class="hero-noise"></div>
 
-  <!-- Блок 1: Как переводить деньги -->
-            <div style="background: linear-gradient(135deg, rgba(20, 80, 100, 0.3), rgba(15, 60, 80, 0.2)); border: 2px solid #1a8fa8; border-radius: 20px; padding: 30px; margin-bottom: 30px; box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);">
-                <div style="display: flex; align-items: center; margin-bottom: 20px;">
-                    <span style="font-size: 2.5rem; margin-right: 20px;">💳</span>
-                    <h2 style="color: #40d9e8; margin: 0; font-size: 1.6rem;">Как переводить деньги</h2>
-                </div>
-                <p style="color: #e8f4f8; line-height: 1.8; margin: 0;">
-                    1 Через С меня, наводитесь на игрока, выбираете перевести деньги, вводите сумму и подтверждаете.<br>
-                    2 Для перевода с организации/фракции, вы должны подойти к банку и через банкира перевести сумму на счет организации. Скоре получатель может прийти за деньгами или оставить под процентами банка<div class=""></div>
-                </p>
-            </div>
-
-            <!-- Блок 2: Создание организации -->
-            <div style="background: linear-gradient(135deg, rgba(20, 80, 100, 0.3), rgba(15, 60, 80, 0.2)); border: 2px solid #1a8fa8; border-radius: 20px; padding: 30px; margin-bottom: 30px; box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);">
-                <div style="display: flex; align-items: center; margin-bottom: 20px;">
-                    <span style="font-size: 2.5rem; margin-right: 20px;">🏰</span>
-                    <h2 style="color: #40d9e8; margin: 0; font-size: 1.6rem;">Как создать организацию</h2>
-                </div>
-                <p style="color: #e8f4f8; line-height: 1.8; margin: 0;">
-                    Что бы создать собственную организацию или фракцию, вам нужно связаться с #flekshot в дискорде и обсудить детали. Вам потребуется предоставить информацию о целях вашей организации, ее структуре и правилах участия. После утверждения, вы сможете начать набирать членов и развивать свою фракцию в игровом мире.
-                        Основное что нужно знать:
-    Название организации должно быть уникальным и не нарушать ликбезы
-
-    Определите цели и миссию вашей организации
-Количество участников ограничено. Ограничение зависит от типа организации
-                </p>
-            </div>
-
-            <!-- Блок 3: Плюсы организации -->
-            <div style="background: linear-gradient(135deg, rgba(20, 80, 100, 0.3), rgba(15, 60, 80, 0.2)); border: 2px solid #1a8fa8; border-radius: 20px; padding: 30px; margin-bottom: 30px; box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);">
-                <div style="display: flex; align-items: center; margin-bottom: 20px;">
-                    <span style="font-size: 2.5rem; margin-right: 20px;">⭐</span>
-                    <h2 style="color: #40d9e8; margin: 0; font-size: 1.6rem;">Плюсы организации</h2>
-                </div>
-                <p style="color: #e8f4f8; line-height: 1.8; margin: 0;">
-                    организации имеют доступ к специальным ресурсам и возможностям, которые недоступны обычным игрокам. Это включает в себя доступ к эксклюзивным миссиям, оборудованию и локациям. 
-                Кроме того, участники организаций могут сотрудничать для достижения общих целей, что усиливает их влияние в игровом мире.
-                Система репутации : чем больше успешных квестов или миссий завершило организация, тем выше ее репутация. Высокая репутация открывает доступ к более сложным и прибыльным заданиям.
-                Организации получают увеличенные бонусы за период игрового времени в сравнении с одиночными игроками и зависит от активности организации. 
-                </p>
-            </div>
-
-
-            <!-- Блок 7: Экономика и торговля -->
-            <div style="background: linear-gradient(135deg, rgba(20, 80, 100, 0.3), rgba(15, 60, 80, 0.2)); border: 2px solid #1a8fa8; border-radius: 20px; padding: 30px; margin-bottom: 30px; box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);">
-                <div style="display: flex; align-items: center; margin-bottom: 20px;">
-                    <span style="font-size: 2.5rem; margin-right: 20px;">💰</span>
-                    <h2 style="color: #40d9e8; margin: 0; font-size: 1.6rem;">Экономика и торговля</h2>
-                </div>
-                <p style="color: #e8f4f8; line-height: 1.8; margin: 0;">
-                    Основная валюта - Кредиты
-                    На них вы можете покупать внутре игровые предметы как оружия,территорию , лицензии тому подобное
-                    
-                </p>
-                <p>
-                    Торговля между игроками осуществляется через внутриигровой рынок, где вы можете выставлять свои товары на продажу или покупать у других игроков.
-                    Цены на товары могут варьироваться в зависимости от спроса и предложения, что создает динамичную экономическую систему.
-                </p> 
-
-                    <h2 style="color: #40d9e8; margin: 0; font-size: 1.6rem;">Виды рынков:</h2>
-                    На мероприятии действуют два вида рынка : открытый и закрытый.
-            </h2>
-            <h3 style="color: #e8f4f8; line-height: 1.8; margin: 0;">
-                    Открытый рынок - это место, где игроки могут свободно торговать между собой без ограничений. Здесь вы можете найти широкий ассортимент товаров и услуг, а также устанавливать свои собственные цены.
-                    <h3>Закрытый рынок - это специализированные торговые площадки, доступ к которым ограничен определенными условиями, такими как членство в организации или выполнение определенных миссий. На закрытом рынке часто можно найти редкие и ценные предметы, которые недоступны на открытом рынке.
-                    </h3>
-                    </h3>
-            </div>
-
-            <!-- Блок 8: Квесты и миссии -->
-            <div style="background: linear-gradient(135deg, rgba(20, 80, 100, 0.3), rgba(15, 60, 80, 0.2)); border: 2px solid #1a8fa8; border-radius: 20px; padding: 30px; margin-bottom: 30px; box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);">
-                <div style="display: flex; align-items: center; margin-bottom: 20px;">
-                    <span style="font-size: 2.5rem; margin-right: 20px;">🎯</span>
-                    <h2 style="color: #40d9e8; margin: 0; font-size: 1.6rem;">Квесты и миссии</h2>
-                </div>
-                <p style="color: #e8f4f8; line-height: 1.8; margin: 0;">
-                    Вы можете по внутре игровым обьявлением а так же через секретные каналы определять миссии и квесты для выполнения.
-                    За выполнение миссий вы получаете награды в виде кредитов,или уникальных предметов.
-                </p>
-            </div>
-
-            <!-- Блок 9: Предметы и снаряжение -->
-            <div style="background: linear-gradient(135deg, rgba(20, 80, 100, 0.3), rgba(15, 60, 80, 0.2)); border: 2px solid #1a8fa8; border-radius: 20px; padding: 30px; margin-bottom: 30px; box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);">
-                <div style="display: flex; align-items: center; margin-bottom: 20px;">
-                    <span style="font-size: 2.5rem; margin-right: 20px;">⚙️</span>
-                    <h2 style="color: #40d9e8; margin: 0; font-size: 1.6rem;">Предметы и снаряжение</h2>
-                </div>
-                
-                <p style="color: #e8f4f8; line-height: 1.8; margin: 0;">
-                    Предметы и снаряжение включают в себя оружие, броню, расходные материалы и специальные устройства.
-                    Снаряжение можно получить/открыт с помощью кнопки I.(Инвентарь)
-                </p>
-            </div>
-
-            <!-- Блок 10: ПВП и боевые системы -->
-            <div style="background: linear-gradient(135deg, rgba(20, 80, 100, 0.3), rgba(15, 60, 80, 0.2)); border: 2px solid #1a8fa8; border-radius: 20px; padding: 30px; margin-bottom: 30px; box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);">
-                <div style="display: flex; align-items: center; margin-bottom: 20px;">
-                    <span style="font-size: 2.5rem; margin-right: 20px;">⚡</span>
-                    <h2 style="color: #40d9e8; margin: 0; font-size: 1.6rem;">ПВП и боевые системы</h2>
-                </div>
-                <p style="color: #e8f4f8; line-height: 1.8; margin: 0;">
-                    Система ПВП (игрок против игрока) позволяет участникам сражаться друг с другом в различных режимах боя.
-                    После смерти игрок может потерять часть вооружение и  так же предметов.
-                    Погибая игрок возраждается на общем спавне в метро(Магистральные пути)
-                    Сражаться или убивать кого либо на общем спавне запрещено.
-                </p>
-            </div>
-
-        </div>
+    <div id="cursor-outer"></div>
+    <div id="cursor-inner">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3 2L21 12L12 14L14 22L3 2Z" fill="#00f2ff" stroke="white" stroke-width="1.5"/>
+        </svg>
     </div>
-        <div class="tabs-container">
-            <nav class="tabs-nav">
-                <a href="index.html" class="tab-button" title="На главную">
-                    <span class="tab-icon">◆</span>
-                </a>
-                <a href="sector1.html" class="tab-button" title="Карта и Маршруты">
-                    <span class="tab-icon">◆</span>
-                </a>
-                <a href="sector2.html" class="tab-button" title="Инструкция гайды">
-                    <span class="tab-icon">◆</span>
-                </a>
-                <a href="sector3.html" class="tab-button" title="Организации Фракции">
-                    <span class="tab-icon">◆</span>
-                </a>
-                <a href="sector4.html" class="tab-button" title="Ответы на вопросы">
-                    <span class="tab-icon">◆</span>
-                </a>
-            </nav>
+
+    <nav class="fixed top-0 left-0 w-full z-50 px-8 py-6 border-b border-white/10 backdrop-blur-xl bg-black/50">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <a href="index.html" class="animated-gradient text-xl">Городской Ивент</a>
+            <div class="hidden md:flex items-center gap-12">
+                <a href="index.html" class="nav-link">Главная</a>
+                <a href="sector1.html" class="nav-link">Карта</a>
+                <a href="sector2.html" class="nav-link text-cyan-400">Гайды</a>
+                <a href="sector3.html" class="nav-link">Фракции</a>
+                <a href="sector4.html" class="nav-link">FAQ</a>
+            </div>
         </div>
-    </div>
+    </nav>
+
+    <header class="relative min-h-screen flex items-center justify-center px-8 overflow-hidden pt-24">
+        <div class="absolute inset-0 z-0">
+            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80vw] h-[80vw] border border-cyan-400/[0.03] rounded-full"></div>
+            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60vw] h-[60vw] border border-white/[0.02] rounded-full"></div>
+            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[40vw] h-[40vw] border border-cyan-400/[0.05] rounded-full"></div>
+        </div>
+
+        <div class="max-w-7xl mx-auto w-full relative z-10">
+            <div class="grid grid-cols-12 gap-8">
+                <div class="col-span-12 lg:col-span-4 hero-reveal">
+                    <div class="space-y-12">
+                        <div>
+                            <span class="text-cyan-400 font-bold tracking-[0.4em] uppercase text-[9px] mb-4 block">// Инструкция</span>
+                            <p class="text-lg text-neutral-400 leading-relaxed opacity-80">
+                                Полное руководство по игре. Узнайте все механики и советы.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-span-12 lg:col-span-8 text-center lg:text-right hero-reveal">
+                    <h1 class="font-syncopate text-[clamp(4rem,16vw,12rem)] font-bold leading-[0.75] tracking-tighter mb-4">
+                        ГАЙДЫ<br>
+
+                    </h1>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <section class="py-24 md:py-32 px-8">
+        <div class="max-w-7xl mx-auto">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="glass-card p-8 section-reveal">
+                    <h3 class="text-cyan-400 font-bold mb-4">💳 Как переводить деньги</h3>
+                    <p class="text-neutral-400 text-sm leading-relaxed">Через 'С меня', наводитесь на игрока, выбираете перевести деньги и подтверждаете. Для перевода с организации подойдите к банку.</p>
+                </div>
+
+                <div class="glass-card p-8 section-reveal">
+                    <h3 class="text-cyan-400 font-bold mb-4">🏰 Как создать организацию</h3>
+                    <p class="text-neutral-400 text-sm leading-relaxed">Свяжитесь с администраторами. Предоставьте информацию о целях, структуре и правилах.</p>
+                </div>
+
+                <div class="glass-card p-8 section-reveal">
+                    <h3 class="text-cyan-400 font-bold mb-4">⭐ Плюсы организации</h3>
+                    <p class="text-neutral-400 text-sm leading-relaxed">Доступ к специальным ресурсам, эксклюзивным миссиям, оборудованию и бонусам.</p>
+                </div>
+
+                <div class="glass-card p-8 section-reveal">
+                    <h3 class="text-cyan-400 font-bold mb-4">💰 Экономика и торговля</h3>
+                    <p class="text-neutral-400 text-sm leading-relaxed">Основная валюта - Кредиты. На них покупают предметы, оружие и территории.</p>
+                </div>
+
+                <div class="glass-card p-8 section-reveal">
+                    <h3 class="text-cyan-400 font-bold mb-4">🎯 Квесты и миссии</h3>
+                    <p class="text-neutral-400 text-sm leading-relaxed">Определяйте миссии через объявления. За выполнение получайте кредиты и предметы.</p>
+                </div>
+
+                <div class="glass-card p-8 section-reveal">
+                    <h3 class="text-cyan-400 font-bold mb-4">⚙️ Предметы и снаряжение</h3>
+                    <p class="text-neutral-400 text-sm leading-relaxed">Оружие, броня, расходники и устройства. Управляйте инвентарем клавишей I.</p>
+                </div>
+
+                <div class="glass-card p-8 section-reveal">
+                    <h3 class="text-cyan-400 font-bold mb-4">⚡ ПВП и боевые системы</h3>
+                    <p class="text-neutral-400 text-sm leading-relaxed">Сражайтесь с другими игроками. После смерти теряете часть вооружения.</p>
+                </div>
+
+                <div class="glass-card p-8 section-reveal">
+                    <h3 class="text-cyan-400 font-bold mb-4">📍 Навигация по городу</h3>
+                    <p class="text-neutral-400 text-sm leading-relaxed">Используйте карту города. Каждый район имеет свои особенности и НПЦ.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="site-footer">
+        <div class="footer-credit">Rise of the Republic™ • Городской Ивент</div>
+    </footer>
+
     <script src="script.js"></script>
+    <script>
+        const cursorOuter = document.getElementById('cursor-outer');
+        const cursorInner = document.getElementById('cursor-inner');
+        
+        let mouseX = 0, mouseY = 0;
+        let outerX = 0, outerY = 0;
+        
+        window.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+            cursorInner.style.transform = `translate(${mouseX - 12}px, ${mouseY - 12}px)`;
+        });
+        
+        function animateCursor() {
+            outerX += (mouseX - outerX) * 0.15;
+            outerY += (mouseY - outerY) * 0.15;
+            cursorOuter.style.transform = `translate(${outerX - 20}px, ${outerY - 20}px)`;
+            requestAnimationFrame(animateCursor);
+        }
+        animateCursor();
+
+        const links = document.querySelectorAll('a, button, .glass-card, .group');
+        links.forEach(link => {
+            link.addEventListener('mouseenter', () => {
+                document.body.classList.add('cursor-hover');
+            });
+            link.addEventListener('mouseleave', () => {
+                document.body.classList.remove('cursor-hover');
+            });
+        });
+
+        const lenis = new Lenis({
+            duration: 1.2,
+            easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+        });
+        function raf(time) {
+            lenis.raf(time);
+            requestAnimationFrame(raf);
+        }
+        requestAnimationFrame(raf);
+
+        gsap.registerPlugin(ScrollTrigger);
+        gsap.from(".hero-reveal", {
+            y: 40,
+            opacity: 0,
+            duration: 1.2,
+            stagger: 0.2,
+            ease: "power3.out",
+            clearProps: "all"
+        });
+
+        gsap.utils.toArray('.section-reveal').forEach(el => {
+            gsap.to(el, {
+                scrollTrigger: {
+                    trigger: el,
+                    start: "top 90%",
+                    toggleActions: "play none none reverse"
+                },
+                y: 0,
+                opacity: 1,
+                duration: 0.8,
+                ease: "power2.out"
+            });
+        });
+
+        window.addEventListener('load', () => ScrollTrigger.refresh());
+    </script>
 </body>
 </html>

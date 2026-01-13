@@ -1,292 +1,432 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Карта Мероприятия</title>
-    <link rel="stylesheet" href="styles.css">
-    
+    <title>Карта и Маршруты | Rise of the Republic</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://unpkg.com/lenis@1.1.18/dist/lenis.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Syncopate:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="cursor.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        :root {
+            --bg-dark: #020202;
+            --accent-primary: #00f2ff;
+            --accent-secondary: #7000ff;
+            --text-main: #ffffff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            cursor: none;
+        }
+
+        html.lenis, html.lenis body {
+            height: auto;
+        }
+
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            overflow-x: hidden;
+            line-height: 1.4;
+        }
+
+        .grid-bg {
+            position: fixed;
+            inset: 0;
+            background-image: 
+                linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+            background-size: 40px 40px;
+            z-index: -2;
+            pointer-events: none;
+        }
+
+        .hero-noise {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            opacity: 0.03;
+            pointer-events: none;
+            background-image: url('https://grainy-gradients.vercel.app/noise.svg');
+        }
+
+        .font-syncopate { font-family: 'Syncopate', sans-serif; }
+
+        .gradient-text {
+            background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .section-reveal {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.6s cubic-bezier(0.19, 1, 0.22, 1);
+        }
+
+        .glass-card:hover {
+            border-color: var(--accent-primary);
+            background: rgba(255, 255, 255, 0.04);
+            box-shadow: 0 20px 40px rgba(0, 242, 255, 0.15);
+        }
+
+        .site-footer {
+            position: fixed;
+            left: 50%;
+            bottom: 24px;
+            transform: translateX(-50%);
+            z-index: 1200;
+            pointer-events: none;
+        }
+
+        .footer-credit {
+            display: inline-block;
+            color: rgba(0, 242, 255, 0.6);
+            font-size: 12px;
+            padding: 8px 16px;
+            border: 1px solid rgba(0, 242, 255, 0.2);
+            border-radius: 4px;
+            background: rgba(2, 2, 2, 0.8);
+            backdrop-filter: blur(10px);
+            letter-spacing: 1px;
+            font-weight: 500;
+        }
+
+        .nav-link {
+            color: rgba(255, 255, 255, 0.7);
+            transition: color 0.3s ease;
+        }
+
+        .nav-link:hover {
+            color: var(--accent-primary);
+        }
+
+        .animated-gradient {
+            background: linear-gradient(90deg, #00f2ff, #7000ff, #ff00ff, #ffa500, #00f2ff);
+            background-size: 300% 100%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientShift 8s ease infinite;
+            font-family: 'Syncopate', sans-serif;
+            font-weight: bold;
+            letter-spacing: -0.02em;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% center; }
+            50% { background-position: 100% center; }
+            100% { background-position: 0% center; }
+        }
+
+        h1, h2, h3, h4, h5, h6, p, span, a, div {
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+
+        img, svg {
+            pointer-events: none;
+            user-select: none;
+        }
+    </style>
 </head>
-<body>
-    <div class="container">
-        <div class="main-content">
-            <header class="header">
-                <a href="index.html" style="color: #ffd700; text-decoration: none; font-size: 0.9rem; margin-bottom: 30px; display: inline-block;">← ВЕРНУТЬСЯ</a>
-                <h1>Карта Мероприятия</h1>
-                <p class="subtitle">Исследуйте первую зону галактики</p>
-            </header>
+<body class="antialiased">
+    <div class="grid-bg"></div>
+    <div class="hero-noise"></div>
 
-            <div style="background: linear-gradient(135deg, rgba(255, 215, 0, 0.05), rgba(255, 215, 0, 0.02)); border: 1px solid #ffd700; padding: 40px; margin-bottom: 40px;">
-                <h2 style="color: #ffd700; margin-bottom: 20px; font-size: 1.8rem;"> Информация об карте </h2>
-                <p style="color: #ffff00; line-height: 1.8; margin-bottom: 20px;">
-                    Корусант (англ. Coruscant [kɔɹəsɑnt]), также известный как Центр Империи, Юужань'тар (будучи захваченным юужань-вонгами) или Королева Ядра — сверкающая планета, расположенная в сердце Галактики. Корусант тысячелетиями был политическим центром Галактики, где принимались самые важные решения, затрагивающие жизни триллионов. С зари межзвездной истории за одним единственным словом «Корусант» скрывалось бесспорное средоточие власти, силы, законности, истории и культуры 
-
-            </div>
-
-
-                <div id="map" style="width: 100%; height: 600px; background: #0b0d11; border: 1px solid #ffd700; box-sizing: border-box;"></div>
-
-<script>
-  var map = L.map('map', {
-    crs: L.CRS.Simple,
-    minZoom: -1,
-    maxZoom: 2
-  });
-
-  // Укажи размеры своей картинки здесь для точности (например, 1000 на 500)
-  var bounds = [[0, 0], [1000, 2000]]; 
-  var image = L.imageOverlay('images/map_coruscant_1.png', bounds).addTo(map);
-  map.fitBounds(bounds);
-  map.setMaxBounds(bounds);
-
-  // Функция для создания стильных зон
-  function addZone(coords, color, name, description) {
-    var zone = L.polygon(coords, {
-      color: color,
-      fillColor: color,
-      fillOpacity: 0.2,
-      weight: 3
-    }).addTo(map);
-
-    // Стилизованная карточка (Popup)
-    var popupContent = `
-      <div style="background: #1a1a1a; color: #fff; padding: 10px; border: 1px solid ${color}; border-radius: 5px; min-width: 200px;">
-        <h3 style="margin: 0 0 10px 0; color: ${color}; font-size: 1.2rem; text-transform: uppercase;">${name}</h3>
-        <p style="margin: 0; font-size: 0.9rem; line-height: 1.4; color: #ccc;">${description}</p>
-        <hr style="border: 0; border-top: 1px solid #333; margin: 10px 0;">
-        <span style="font-size: 0.7rem; color: #888;">Сектор: Корусант-Прайм</span>
-      </div>
-    `;
-
-    zone.bindPopup(popupContent, { className: 'custom-popup' });
-    zone.bindTooltip(name, { sticky: true, direction: 'top' });
-
-    // Интерактив при наведении
-    zone.on('mouseover', function () {
-      this.setStyle({ fillOpacity: 0.5, weight: 5 });
-    });
-    zone.on('mouseout', function () {
-      this.setStyle({ fillOpacity: 0.2, weight: 3 });
-    });
-  }
-
-  // --- ДОБАВЛЕНИЕ ЗОН ПО ТВОЕМУ СПИСКУ ---
-// --- ДОБАВЛЕНИЕ ТОЧКИ СПАВНА ---
-
-  // Создаем иконку (опционально, можно использовать стандартную синюю)
-  var spawnIcon = L.divIcon({
-    html: '<div style="background-color: #00f2ff; width: 15px; height: 15px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 10px #00f2ff;"></div>',
-    className: 'custom-spawn-icon',
-    iconSize: [15, 15],
-    iconAnchor: [7, 7]
-  });
-
-  // Добавляем маркер спавна
-  // Координаты [450, 500] — это пример, подправь их под нужную точку на магистрали
-  var spawnPoint = L.marker([440, 650], {icon: spawnIcon}).addTo(map);
-
-  // Привязываем карточку к точке спавна
-  spawnPoint.bindPopup(`
-    <div style="background: #1a1a1a; color: #fff; padding: 10px; border: 1px solid #00f2ff; border-radius: 5px;">
-      <h3 style="margin: 0 0 5px 0; color: #00f2ff; font-size: 1.1rem;">ТОЧКА ПРИБЫТИЯ</h3>
-      <p style="margin: 0; font-size: 0.85rem;">Здесь появляются новые игроки и транспорт.</p>
+    <div id="cursor-outer"></div>
+    <div id="cursor-inner">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3 2L21 12L12 14L14 22L3 2Z" fill="#00f2ff" stroke="white" stroke-width="1.5"/>
+        </svg>
     </div>
-  `);
 
-  // Подсказка, которая видна сразу при наведении
-  spawnPoint.bindTooltip("<b>ТОЧКА СПАВНА</b>", { permanent: false, direction: 'right' });
-  // 1. Оранжевый - Зона Порта (Слева сверху)
-  addZone([[750, 100], [950, 100], [950, 700], [750, 700]], "#ffa500", "Зона Порта", "Главный логистический узел. Здесь принимаются грузовые корабли и контрабанда.");
+    <nav class="fixed top-0 left-0 w-full z-50 px-8 py-6 border-b border-white/10 backdrop-blur-xl bg-black/50">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <a href="index.html" class="animated-gradient text-xl">Городской Ивент</a>
+            <div class="hidden md:flex items-center gap-12">
+                <a href="index.html" class="nav-link">Главная</a>
+                <a href="sector1.html" class="nav-link text-cyan-400">Карта</a>
+                <a href="sector2.html" class="nav-link">Гайды</a>
+                <a href="sector3.html" class="nav-link">Фракции</a>
+                <a href="sector4.html" class="nav-link">FAQ</a>
+            </div>
+        </div>
+    </nav>
 
-  // 2. Фиолетовый - Катакомбы и Индустриалка (Центр сверху)
-  addZone([[700, 750], [950, 750], [950, 1200], [700, 1200]], "#bf00ff", "Индустриальная Зона", "Заводы по производству дроидов , тяжелых сплавов и материалов для жителей.");
+    <header class="relative min-h-screen flex items-center justify-center px-8 overflow-hidden pt-24">
+        <div class="absolute inset-0 z-0">
+            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80vw] h-[80vw] border border-cyan-400/[0.03] rounded-full"></div>
+            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60vw] h-[60vw] border border-white/[0.02] rounded-full"></div>
+            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[40vw] h-[40vw] border border-cyan-400/[0.05] rounded-full"></div>
+        </div>
 
-
-  // 4. Ярко-синий - Магистральный путь (Слева снизу)
-  addZone([[300, 200], [600, 200], [600, 800], [300, 800]], "#00f2ff", "Магистральный путь", "Основная трасса для спидеров. Высокий трафик, патрули ПД.");
-
-  // 5. Красный - Полицейский Департамент (Центр)
-  addZone([[450, 850], [600, 850], [600, 1200], [450, 1200]], "#ff0000", "Полицейский Департамент", "Центральный штаб сил безопасности. Вход без пропуска запрещен.");
-
-  // 6. Зеленый - Зона Центрального Банка (Справа центр)
-  addZone([[350, 1400], [550, 1400], [550, 1700], [350, 1700]], "#00ff00", "Центральный Банк", "Финансовое сердце сектора. ");
-
-  // 7. Желтый - Линия коммуникаций (Твой длинный путь)
-  var highwayCoords = [[600,650],[600, 800], [400, 800], [400, 1200], ];
-  L.polyline(highwayCoords, {color: 'yellow', weight: 8, opacity: 0.7}).addTo(map)
-   .bindTooltip("Главный Транспортный Коридор");
-
-  // 8. Белый - Не занятые зоны (Внизу)
-  addZone([[100, 1000], [300, 1000], [300, 1300], [100, 1300]], "#ffffff", "Свободный сектор", "Территория доступна для освоения или временных лагерей.");
-
-  // ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ: Кликни на карту, чтобы увидеть координаты в консоли (F12)
-  map.on('click', function(e) {
-      console.log("[" + Math.round(e.latlng.lat) + ", " + Math.round(e.latlng.lng) + "]");
-  });
-</script>
-
-                <div id="map2" style="width: 100%; height: 600px; background: #0b0d11; border: 1px solid #ffd700; box-sizing: border-box; margin-top: 40px;"></div>
-
-<script>
-  // Инициализация второй карты (не забудь сменить путь к файлу изображения на актуальный для этой карты)
-  var map2 = L.map('map2', {
-    crs: L.CRS.Simple,
-    minZoom: -1,
-    maxZoom: 2
-  });
-
-  var bounds = [[0, 0], [1000, 1500]]; 
-  var image = L.imageOverlay('images/map_coruscant_2.png', bounds).addTo(map2);
-  map2.fitBounds(bounds);
-  map2.setMaxBounds(bounds);
-
-  // Универсальная функция для зон
-  function addZone2(coords, color, name, description) {
-    var zone = L.polygon(coords, {
-      color: color,
-      fillColor: color,
-      fillOpacity: 0.25,
-      weight: 3
-    }).addTo(map2);
-
-    var popupContent = `
-      <div style="background: #1a1a1a; color: #fff; padding: 12px; border: 1px solid ${color}; border-radius: 5px; min-width: 180px;">
-        <h3 style="margin: 0 0 8px 0; color: ${color}; text-transform: uppercase; font-size: 1.1rem;">${name}</h3>
-        <p style="margin: 0; font-size: 0.85rem; line-height: 1.4; color: #ddd;">${description}</p>
-      </div>
-    `;
-
-    zone.bindPopup(popupContent);
-    zone.bindTooltip(name, { sticky: true });
-
-    zone.on('mouseover', function () { this.setStyle({ fillOpacity: 0.5, weight: 4 }); });
-    zone.on('mouseout', function () { this.setStyle({ fillOpacity: 0.25, weight: 3 }); });
-  }
-
-  // --- РАЗМЕТКА ВТОРОЙ КАРТЫ ---
-
-  // 1. Оранжевая зона - Барахолка (Слева)
-  addZone2([[450, 50], [850, 50], [850, 450], [450, 450]], "#ffa500", "Барахолка", "Рынок подержанных запчастей и редких товаров. Здесь можно найти всё — от чипа до турбины.");
-
-  // 2. Фиолетовая зона - Развилка А (Центр)
-  addZone2([[400, 500], [550, 500], [550, 700], [400, 700]], "#bf00ff", "Развилка А", "Ключевой транспортный узел, соединяющий жилые сектора с промышленными.");
-
-  // 3. Зеленая зона - Таможня (Справа)
-  addZone2([[350, 750], [800, 750], [800, 1100], [350, 1100]], "#00ff00", "Таможня", "Пост проверки грузов. Требуется лицензия на торговлю или пропуск.");
-
-  // 4. Ярко-синяя зона - Терминал и склад (Справа снизу)
-  addZone2([[50, 750], [300, 750], [300, 1100], [50, 1100]], "#00f2ff", "Терминал и Склад", "Зона разгрузки крупных контейнеров и долгосрочного хранения.");
-
-  // --- ТОЧКА СПАВНА ---
-  var spawnIcon = L.divIcon({
-    html: '<div style="background-color: #ffd700; width: 12px; height: 12px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 10px #ffd700;"></div>',
-    iconSize: [12, 12],
-    className: 'spawn-point'
-  });
-
-
-  // Для настройки координат кликай по карте и смотри в консоль (F12)
-  map2.on('click', function(e) {
-      console.log("[" + Math.round(e.latlng.lat) + ", " + Math.round(e.latlng.lng) + "]");
-  });
-</script>
-
-            <!-- ГАЛЕРЕЯ СКРИНШОТОВ ПЕРВОЙ КАРТЫ -->
-            <div style="margin-top: 60px; padding: 30px; background: linear-gradient(135deg, rgba(255, 215, 0, 0.03), rgba(0, 0, 0, 0.1)); border: 1px solid #ffd700; border-radius: 8px;">
-                <h2 style="color: #ffd700; margin-bottom: 30px; font-size: 1.6rem;">📸 Визуальные примеры зон Сектора 1</h2>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px;">
-                    <!-- Скриншот 1 -->
-                    <div style="background: #0b0d11; border: 2px solid #ffa500; padding: 15px; border-radius: 6px; text-align: center;">
-                        <div style="color: #ffa500; font-size: 0.9rem; margin-bottom: 10px; font-weight: bold;">📍 Зона Порта</div>
-                        <img src="images/port_zone.png" alt="Зона Порта" style="width: 100%; height: 280px; object-fit: cover; border-radius: 4px;">
+        <div class="max-w-7xl mx-auto w-full relative z-10">
+            <div class="grid grid-cols-12 gap-8">
+                <div class="col-span-12 lg:col-span-4 hero-reveal">
+                    <div class="space-y-12">
+                        <div>
+                            <span class="text-cyan-400 font-bold tracking-[0.4em] uppercase text-[9px] mb-4 block">// Карта и Маршруты</span>
+                            <p class="text-lg text-neutral-400 leading-relaxed opacity-80">
+                                Исследуйте всю карту города. Каждый район имеет свои особенности и возможности.
+                            </p>
+                        </div>
+                        <a href="#map" class="bg-cyan-400 text-black py-5 px-10 text-[11px] font-bold tracking-[0.3em] uppercase hover:bg-white transition-all w-fit inline-block">
+                            Открыть Карту
+                        </a>
                     </div>
+                </div>
 
-                    <!-- Скриншот 2 -->
-                    <div style="background: #0b0d11; border: 2px solid #bf00ff; padding: 15px; border-radius: 6px; text-align: center;">
-                        <div style="color: #bf00ff; font-size: 0.9rem; margin-bottom: 10px; font-weight: bold;">🏭 Индустриальная Зона</div>
-                        <img src="images/industrial_zone.png" alt="Индустриальная Зона" style="width: 100%; height: 280px; object-fit: cover; border-radius: 4px;">
+                <div class="col-span-12 lg:col-span-8 text-center lg:text-right hero-reveal">
+                    <div class="relative inline-block">
+                        <h1 class="font-syncopate text-[clamp(4rem,16vw,12rem)] font-bold leading-[0.75] tracking-tighter mb-4">
+                            КАРТА<br>
+                            <span class="gradient-text">ГОРОДА</span>
+                        </h1>
                     </div>
+                </div>
+            </div>
+        </div>
+    </header>
 
-                    <!-- Скриншот 3 -->
-                    <div style="background: #0b0d11; border: 2px solid #00f2ff; padding: 15px; border-radius: 6px; text-align: center;">
-                        <div style="color: #00f2ff; font-size: 0.9rem; margin-bottom: 10px; font-weight: bold;">🛣️ Магистральный путь</div>
-                        <img src="images/zone_port.png" alt="Магистральный путь" style="width: 100%; height: 280px; object-fit: cover; border-radius: 4px;">
+    <section class="py-24 md:py-32 px-8">
+        <div class="max-w-7xl mx-auto">
+            <div class="glass-card p-12 mb-16 section-reveal">
+                <h2 class="font-syncopate text-3xl font-bold mb-6 text-cyan-400">О Корусанте</h2>
+                <p class="text-neutral-400 leading-relaxed">
+                    Корусант  величественная планета, расположенная в сердце галактики. Тысячелетиями он был политическим центром, где принимались самые важные решения. Исследуйте её секторы и найдите свой путь в этом огромном городе.
+                </p>
+            </div>
+
+            <div id="map" class="mb-16 section-reveal" style="width: 100%; height: 600px; background: #0a0a0a; border: 1px solid rgba(0,242,255,0.2); border-radius: 8px;"></div>
+
+            <div class="mb-20 section-reveal">
+                <h2 class="font-syncopate text-3xl font-bold text-cyan-400 mb-12">Визуальные примеры зон - Сектор 1</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="glass-card overflow-hidden">
+                        <div class="text-orange-400 text-xs font-bold tracking-widest mb-2 px-8 pt-6">🟠 ЗОНА ПОРТА</div>
+                        <img src="images/port_zone.png" alt="Зона Порта" class="w-full h-48 object-cover">
                     </div>
-
-                    <!-- Скриншот 4 -->
-                    <div style="background: #0b0d11; border: 2px solid #ff0000; padding: 15px; border-radius: 6px; text-align: center;">
-                        <div style="color: #ff0000; font-size: 0.9rem; margin-bottom: 10px; font-weight: bold;">🚔 Полицейский Департамент</div>
-                        <img src="images/police_zone.png" alt="Полицейский Департамент" style="width: 100%; height: 280px; object-fit: cover; border-radius: 4px;">
+                    <div class="glass-card overflow-hidden">
+                        <div class="text-purple-400 text-xs font-bold tracking-widest mb-2 px-8 pt-6">🟣 ИНДУСТРИАЛЬНАЯ ЗОНА</div>
+                        <img src="images/industrial_zone.png" alt="Индустриальная Зона" class="w-full h-48 object-cover">
                     </div>
-
-                    <!-- Скриншот 5 -->
-                    <div style="background: #0b0d11; border: 2px solid #00ff00; padding: 15px; border-radius: 6px; text-align: center;">
-                        <div style="color: #00ff00; font-size: 0.9rem; margin-bottom: 10px; font-weight: bold;">🏦 Центральный Банк</div>
-                        <img src="images/bank_zone.png" alt="Центральный Банк" style="width: 100%; height: 280px; object-fit: cover; border-radius: 4px;">
+                    <div class="glass-card overflow-hidden">
+                        <div class="text-cyan-400 text-xs font-bold tracking-widest mb-2 px-8 pt-6">🔵 МАГИСТРАЛЬНЫЙ ПУТЬ</div>
+                        <img src="images/zone_port.png" alt="Магистральный путь" class="w-full h-48 object-cover">
                     </div>
-
-                    <!-- Скриншот 6 -->
-                    <div style="background: #0b0d11; border: 2px solid #ffffff; padding: 15px; border-radius: 6px; text-align: center;">
-                        <div style="color: #ffffff; font-size: 0.9rem; margin-bottom: 10px; font-weight: bold;">⚪ Свободный сектор</div>
-                        <img src="images/free_sector.png" alt="Свободный сектор" style="width: 100%; height: 280px; object-fit: cover; border-radius: 4px;">
+                    <div class="glass-card overflow-hidden">
+                        <div class="text-red-400 text-xs font-bold tracking-widest mb-2 px-8 pt-6">🔴 ПОЛИЦЕЙСКИЙ ДЕПАРТАМЕНТ</div>
+                        <img src="images/police_zone.png" alt="Полицейский Департамент" class="w-full h-48 object-cover">
+                    </div>
+                    <div class="glass-card overflow-hidden">
+                        <div class="text-green-400 text-xs font-bold tracking-widest mb-2 px-8 pt-6">🟢 ЦЕНТРАЛЬНЫЙ БАНК</div>
+                        <img src="images/bank_zone.png" alt="Центральный Банк" class="w-full h-48 object-cover">
+                    </div>
+                    <div class="glass-card overflow-hidden">
+                        <div class="text-white text-xs font-bold tracking-widest mb-2 px-8 pt-6">⚪ СВОБОДНЫЙ СЕКТОР</div>
+                        <img src="images/free_sector.png" alt="Свободный сектор" class="w-full h-48 object-cover">
                     </div>
                 </div>
             </div>
 
-            <!-- ГАЛЕРЕЯ СКРИНШОТОВ ВТОРОЙ КАРТЫ -->
-            <div style="margin-top: 60px; padding: 30px; background: linear-gradient(135deg, rgba(255, 215, 0, 0.03), rgba(0, 0, 0, 0.1)); border: 1px solid #ffd700; border-radius: 8px;">
-                <h2 style="color: #ffd700; margin-bottom: 30px; font-size: 1.6rem;">📸 Визуальные примеры зон Сектора 2</h2>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px;">
-                    <!-- Скриншот 7 -->
-                    <div style="background: #0b0d11; border: 2px solid #ffa500; padding: 15px; border-radius: 6px; text-align: center;">
-                        <div style="color: #ffa500; font-size: 0.9rem; margin-bottom: 10px; font-weight: bold;">🛒 Барахолка</div>
-                        <img src="images/baraholka.png" alt="Барахолка" style="width: 100%; height: 280px; object-fit: cover; border-radius: 4px;">
-                    </div>
+            <div class="mb-16 section-reveal">
+                <h2 class="font-syncopate text-3xl font-bold text-cyan-400 mb-4">Второй Сектор</h2>
+                <p class="text-neutral-400">Промышленные районы и засекреченные зоны</p>
+            </div>
 
-                    <!-- Скриншот 8 -->
-                    <div style="background: #0b0d11; border: 2px solid #bf00ff; padding: 15px; border-radius: 6px; text-align: center;">
-                        <div style="color: #bf00ff; font-size: 0.9rem; margin-bottom: 10px; font-weight: bold;">🔀 Развилка А</div>
-                        <img src="images/razvilka.png" alt="Развилка А" style="width: 100%; height: 280px; object-fit: cover; border-radius: 4px;">
-                    </div>
+            <div id="map2" class="mb-16 section-reveal" style="width: 100%; height: 600px; background: #0a0a0a; border: 1px solid rgba(0,242,255,0.2); border-radius: 8px;"></div>
 
-                    <!-- Скриншот 9 -->
-                    <div style="background: #0b0d11; border: 2px solid #00ff00; padding: 15px; border-radius: 6px; text-align: center;">
-                        <div style="color: #00ff00; font-size: 0.9rem; margin-bottom: 10px; font-weight: bold;">🚢 Таможня</div>
-                        <img src="images/customs.png" alt="Таможня" style="width: 100%; height: 280px; object-fit: cover; border-radius: 4px;">
+            <div class="mb-20 section-reveal">
+                <h2 class="font-syncopate text-3xl font-bold text-cyan-400 mb-12">Визуальные примеры зон - Сектор 2</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="glass-card overflow-hidden">
+                        <div class="text-orange-400 text-xs font-bold tracking-widest mb-2 px-8 pt-6">🛒 БАРАХОЛКА</div>
+                        <img src="images/baraholka.png" alt="Барахолка" class="w-full h-48 object-cover">
                     </div>
-
-                    <!-- Скриншот 10 -->
-                    <div style="background: #0b0d11; border: 2px solid #00f2ff; padding: 15px; border-radius: 6px; text-align: center;">
-                        <div style="color: #00f2ff; font-size: 0.9rem; margin-bottom: 10px; font-weight: bold;">📦 Терминал и Склад</div>
-                        <img src="images/terminal.png" alt="Терминал и Склад" style="width: 100%; height: 280px; object-fit: cover; border-radius: 4px;">
+                    <div class="glass-card overflow-hidden">
+                        <div class="text-purple-400 text-xs font-bold tracking-widest mb-2 px-8 pt-6">🔀 РАЗВИЛКА</div>
+                        <img src="images/razvilka.png" alt="Развилка" class="w-full h-48 object-cover">
+                    </div>
+                    <div class="glass-card overflow-hidden">
+                        <div class="text-green-400 text-xs font-bold tracking-widest mb-2 px-8 pt-6">📋 ТАМОЖНЯ</div>
+                        <img src="images/customs.png" alt="Таможня" class="w-full h-48 object-cover">
+                    </div>
+                    <div class="glass-card overflow-hidden">
+                        <div class="text-cyan-400 text-xs font-bold tracking-widest mb-2 px-8 pt-6">🏛️ ТЕРМИНАЛ</div>
+                        <img src="images/terminal.png" alt="Терминал" class="w-full h-48 object-cover">
                     </div>
                 </div>
-            </div>  
-
-        <!-- Вкладки справа -->
-        <div class="tabs-container">
-            <nav class="tabs-nav">
-                <a href="index.html" class="tab-button" title="На главную">
-                    <span class="tab-icon">◆</span>
-                </a>
-                <a href="sector1.html" class="tab-button" title="Карта и Маршруты">
-                    <span class="tab-icon">◆</span>
-                </a>
-                <a href="sector2.html" class="tab-button" title="Инструкция гайды">
-                    <span class="tab-icon">◆</span>
-                </a>
-                <a href="sector3.html" class="tab-button" title="Организации Фракции">
-                    <span class="tab-icon">◆</span>
-                </a>
-                <a href="sector4.html" class="tab-button" title="Ответы на вопросы">
-                    <span class="tab-icon">◆</span>
-                </a>
-            </nav>
+            </div>
         </div>
-    </div>>
+    </section>
+
+    <footer class="site-footer">
+        <div class="footer-credit">Rise of the Republic  Городской Ивент</div>
+    </footer>
 
     <script src="script.js"></script>
+    <script>
+        const cursorOuter = document.getElementById('cursor-outer');
+        const cursorInner = document.getElementById('cursor-inner');
+        
+        let mouseX = 0, mouseY = 0;
+        let outerX = 0, outerY = 0;
+        
+        window.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+            cursorInner.style.transform = `translate(${mouseX - 12}px, ${mouseY - 12}px)`;
+        });
+        
+        function animateCursor() {
+            outerX += (mouseX - outerX) * 0.15;
+            outerY += (mouseY - outerY) * 0.15;
+            cursorOuter.style.transform = `translate(${outerX - 20}px, ${outerY - 20}px)`;
+            requestAnimationFrame(animateCursor);
+        }
+        animateCursor();
+
+        const links = document.querySelectorAll('a, button, .glass-card, .group');
+        links.forEach(link => {
+            link.addEventListener('mouseenter', () => {
+                document.body.classList.add('cursor-hover');
+            });
+            link.addEventListener('mouseleave', () => {
+                document.body.classList.remove('cursor-hover');
+            });
+        });
+
+        const lenis = new Lenis({
+            duration: 1.2,
+            easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+        });
+        function raf(time) {
+            lenis.raf(time);
+            requestAnimationFrame(raf);
+        }
+        requestAnimationFrame(raf);
+
+        gsap.registerPlugin(ScrollTrigger);
+        gsap.from(".hero-reveal", {
+            y: 40,
+            opacity: 0,
+            duration: 1.2,
+            stagger: 0.2,
+            ease: "power3.out",
+            clearProps: "all"
+        });
+
+        gsap.utils.toArray('.section-reveal').forEach(el => {
+            gsap.to(el, {
+                scrollTrigger: {
+                    trigger: el,
+                    start: "top 90%",
+                    toggleActions: "play none none reverse"
+                },
+                y: 0,
+                opacity: 1,
+                duration: 0.8,
+                ease: "power2.out"
+            });
+        });
+
+        var map = L.map('map', {
+            crs: L.CRS.Simple,
+            minZoom: -1,
+            maxZoom: 2
+        });
+
+        var bounds = [[0, 0], [1000, 2000]]; 
+        var image = L.imageOverlay('images/map_coruscant_1.png', bounds).addTo(map);
+        map.fitBounds(bounds);
+        map.setMaxBounds(bounds);
+
+        function addZone(coords, color, name, description) {
+            var zone = L.polygon(coords, {
+                color: color,
+                fillColor: color,
+                fillOpacity: 0.2,
+                weight: 3
+            }).addTo(map);
+
+            var popupContent = `<div style="background: #1a1a1a; color: #fff; padding: 10px; border: 1px solid ${color}; border-radius: 5px;"><h3 style="margin: 0 0 10px 0; color: ${color};">${name}</h3><p style="margin: 0; font-size: 0.9rem; color: #ccc;">${description}</p></div>`;
+            zone.bindPopup(popupContent);
+            zone.on('mouseover', function () { this.setStyle({ fillOpacity: 0.5, weight: 5 }); });
+            zone.on('mouseout', function () { this.setStyle({ fillOpacity: 0.2, weight: 3 }); });
+        }
+
+        var spawnIcon = L.divIcon({
+            html: '<div style="background-color: #00f2ff; width: 15px; height: 15px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 10px #00f2ff;"></div>',
+            iconSize: [15, 15],
+        });
+
+        L.marker([440, 650], {icon: spawnIcon}).addTo(map);
+        addZone([[750, 100], [950, 100], [950, 700], [750, 700]], "#ffa500", "Зона Порта", "Главный логистический узел");
+        addZone([[700, 750], [950, 750], [950, 1200], [700, 1200]], "#bf00ff", "Индустриальная Зона", "Заводы и производство");
+        addZone([[300, 200], [600, 200], [600, 800], [300, 800]], "#00f2ff", "Магистральный путь", "Основная трасса");
+        addZone([[450, 850], [600, 850], [600, 1200], [450, 1200]], "#ff0000", "Полицейский Департамент", "Центральный штаб");
+        addZone([[350, 1400], [550, 1400], [550, 1700], [350, 1700]], "#00ff00", "Центральный Банк", "Финансовое сердце");
+        addZone([[100, 1000], [300, 1000], [300, 1300], [100, 1300]], "#ffffff", "Свободный сектор", "Территория для освоения");
+
+        // ВТОРАЯ КАРТА
+        var map2 = L.map('map2', {
+            crs: L.CRS.Simple,
+            minZoom: -1,
+            maxZoom: 2
+        });
+
+        var bounds2 = [[0, 0], [1000, 1500]];
+        var image2 = L.imageOverlay('images/map_coruscant_2.png', bounds2).addTo(map2);
+        map2.fitBounds(bounds2);
+        map2.setMaxBounds(bounds2);
+
+        function addZone2(coords, color, name, description) {
+            var zone = L.polygon(coords, {
+                color: color,
+                fillColor: color,
+                fillOpacity: 0.2,
+                weight: 3
+            }).addTo(map2);
+
+            var popupContent = `<div style="background: #1a1a1a; color: #fff; padding: 10px; border: 1px solid ${color}; border-radius: 5px;"><h3 style="margin: 0 0 10px 0; color: ${color};">${name}</h3><p style="margin: 0; font-size: 0.9rem; color: #ccc;">${description}</p></div>`;
+            zone.bindPopup(popupContent);
+            zone.on('mouseover', function () { this.setStyle({ fillOpacity: 0.5, weight: 5 }); });
+            zone.on('mouseout', function () { this.setStyle({ fillOpacity: 0.2, weight: 3 }); });
+        }
+
+        var spawnIcon2 = L.divIcon({
+            html: '<div style="background-color: #7000ff; width: 15px; height: 15px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 10px #7000ff;"></div>',
+            iconSize: [15, 15],
+        });
+
+
+
+        addZone2([[400, 150], [700, 150], [700, 700], [400, 700]], "#FFD700", "Барахолка", "Место торговли и обмена");
+        addZone2([[750, 200], [950, 200], [950, 700], [750, 700]], "#20B2AA", "Клуб Из семи Залуп", "Самый большой клуб города");
+        addZone2([[300, 750], [600, 750], [600, 1200], [300, 1200]], "#FF6347", "Таможня", "Здесь проверяются грузы и товары");
+        addZone2([[50, 750], [300, 750], [300, 1100], [50, 1100]], "#1E90FF", "Терминал", "Транспортный узел для Торговцев и фракций");
+
+
+        window.addEventListener('load', () => ScrollTrigger.refresh());
+    </script>
 </body>
 </html>
