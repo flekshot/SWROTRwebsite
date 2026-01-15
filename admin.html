@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mission Admin | CYBER STRIKE</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Space Grotesk', sans-serif; background:#030712; color:#f8fafc; }
+    .glass { background: rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:14px; }
+    .gradient { background: linear-gradient(90deg, #00f2ff, #7c3aed); }
+  </style>
+</head>
+<body class="min-h-screen py-12">
+  <main class="max-w-6xl mx-auto px-6 space-y-10">
+    <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div>
+        <p class="text-cyan-400 text-xs uppercase tracking-[0.35em]">Control Deck</p>
+        <h1 class="text-3xl md:text-4xl font-bold">Mission Administration</h1>
+        <p class="text-slate-400 text-sm mt-2">Create, edit, or purge missions. Changes persist locally in this browser via localStorage.</p>
+      </div>
+      <div class="flex gap-3">
+        <button id="reset-missions" class="px-4 py-2 text-sm font-semibold text-black gradient rounded-md shadow-lg">Reset to defaults</button>
+        <a href="sector5.html" class="px-4 py-2 text-sm font-semibold border border-white/20 rounded-md hover:border-cyan-400 transition">Back to site</a>
+      </div>
+    </header>
+
+    <section class="glass p-6 shadow-xl">
+      <form id="mission-form" class="space-y-4">
+        <div class="grid md:grid-cols-2 gap-4">
+          <label class="block text-sm">Title
+            <input id="title" name="title" type="text" class="mt-1 w-full bg-black/40 border border-white/10 rounded-md px-3 py-2" required>
+          </label>
+          <label class="block text-sm">Difficulty / Role
+            <input id="difficulty" name="difficulty" type="text" class="mt-1 w-full bg-black/40 border border-white/10 rounded-md px-3 py-2" placeholder="High Risk" required>
+          </label>
+        </div>
+        <label class="block text-sm">Summary
+          <textarea id="summary" name="summary" rows="3" class="mt-1 w-full bg-black/40 border border-white/10 rounded-md px-3 py-2" required></textarea>
+        </label>
+        <label class="block text-sm">Reward
+          <input id="reward" name="reward" type="text" class="mt-1 w-full bg-black/40 border border-white/10 rounded-md px-3 py-2" placeholder="XP + Loot" required>
+        </label>
+        <div class="flex gap-3">
+          <button type="submit" class="px-4 py-2 bg-cyan-400 text-black font-semibold rounded-md">Save Mission</button>
+          <button type="button" id="cancel-edit" class="px-4 py-2 border border-white/20 rounded-md hidden">Cancel edit</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="glass p-6 shadow-xl">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl font-semibold">Mission List</h2>
+        <p class="text-xs text-slate-400">Lock state is controlled on the player page.</p>
+      </div>
+      <div id="mission-list" class="space-y-3"></div>
+    </section>
+  </main>
+
+  <script src="mission.js"></script>
+  <script>
+    (function () {
+      if (!window.MissionService) return;
+      const form = document.getElementById('mission-form');
+      const resetBtn = document.getElementById('reset-missions');
+      const cancelBtn = document.getElementById('cancel-edit');
+      const listEl = document.getElementById('mission-list');
+
+      let editingId = null;
+
+      const formFields = {
+        title: document.getElementById('title'),
+        summary: document.getElementById('summary'),
+        difficulty: document.getElementById('difficulty'),
+        reward: document.getElementById('reward')
+      };
+
+      const render = () => {
+        const missions = MissionService.getAll();
+        listEl.innerHTML = '';
+        missions.forEach((mission) => {
+          const card = document.createElement('div');
+          card.className = 'flex flex-col md:flex-row md:items-center justify-between gap-3 px-4 py-3 bg-black/30 border border-white/10 rounded-md';
+          card.innerHTML = `
+            <div>
+              <p class="text-xs uppercase tracking-[0.25em] text-cyan-400">${mission.difficulty}</p>
+              <h3 class="text-lg font-semibold">${mission.title}</h3>
+              <p class="text-sm text-slate-400">${mission.summary}</p>
+              <p class="text-xs text-slate-500 mt-1">Reward: ${mission.reward}</p>
+              <p class="text-xs mt-1 ${mission.status === 'locked' ? 'text-amber-400' : 'text-emerald-400'}">Status: ${mission.status}${mission.lockedBy ? ` (by ${mission.lockedBy})` : ''}</p>
+            </div>
+            <div class="flex gap-2">
+              <button data-edit="${mission.id}" class="px-3 py-2 text-sm border border-white/20 rounded-md hover:border-cyan-400">Edit</button>
+              <button data-delete="${mission.id}" class="px-3 py-2 text-sm border border-red-500/50 text-red-300 rounded-md hover:bg-red-500/10">Delete</button>
+            </div>
+          `;
+          listEl.appendChild(card);
+        });
+      };
+
+      const clearForm = () => {
+        editingId = null;
+        form.reset();
+        cancelBtn.classList.add('hidden');
+      };
+
+      form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        const payload = {
+          title: formFields.title.value,
+          summary: formFields.summary.value,
+          difficulty: formFields.difficulty.value,
+          reward: formFields.reward.value
+        };
+        if (editingId) {
+          MissionService.updateMission(editingId, payload);
+        } else {
+          MissionService.addMission(payload);
+        }
+        clearForm();
+        render();
+      });
+
+      cancelBtn.addEventListener('click', clearForm);
+
+      listEl.addEventListener('click', (event) => {
+        const editId = event.target.getAttribute('data-edit');
+        const deleteId = event.target.getAttribute('data-delete');
+        if (editId) {
+          const mission = MissionService.getAll().find((m) => m.id === editId);
+          if (!mission) return;
+          editingId = editId;
+          formFields.title.value = mission.title;
+          formFields.summary.value = mission.summary;
+          formFields.difficulty.value = mission.difficulty;
+          formFields.reward.value = mission.reward;
+          cancelBtn.classList.remove('hidden');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        if (deleteId) {
+          if (confirm('Delete this mission?')) {
+            MissionService.removeMission(deleteId);
+            if (editingId === deleteId) clearForm();
+            render();
+          }
+        }
+      });
+
+      resetBtn.addEventListener('click', () => {
+        if (confirm('Reset missions to default seed?')) {
+          MissionService.reset();
+          clearForm();
+          render();
+        }
+      });
+
+      render();
+    })();
+  </script>
+</body>
+</html>

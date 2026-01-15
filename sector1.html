@@ -10,7 +10,6 @@
     <script src="https://unpkg.com/lenis@1.1.18/dist/lenis.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Syncopate:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="cursor.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
         :root {
@@ -24,7 +23,6 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            cursor: none;
         }
 
         html.lenis, html.lenis body {
@@ -152,18 +150,12 @@
     <div class="grid-bg"></div>
     <div class="hero-noise"></div>
 
-    <div id="cursor-outer"></div>
-    <div id="cursor-inner">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M3 2L21 12L12 14L14 22L3 2Z" fill="#00f2ff" stroke="white" stroke-width="1.5"/>
-        </svg>
-    </div>
-
     <nav class="fixed top-0 left-0 w-full z-50 px-8 py-6 border-b border-white/10 backdrop-blur-xl bg-black/50">
         <div class="max-w-7xl mx-auto flex justify-between items-center">
             <a href="index.html" class="animated-gradient text-xl">Городской Ивент</a>
             <div class="hidden md:flex items-center gap-12">
                 <a href="index.html" class="nav-link">Главная</a>
+                <a href="quests.html" class="nav-link">Миссии</a>
                 <a href="sector1.html" class="nav-link text-cyan-400">Карта</a>
                 <a href="sector2.html" class="nav-link">Гайды</a>
                 <a href="sector3.html" class="nav-link">Фракции</a>
@@ -285,36 +277,6 @@
 
     <script src="script.js"></script>
     <script>
-        const cursorOuter = document.getElementById('cursor-outer');
-        const cursorInner = document.getElementById('cursor-inner');
-        
-        let mouseX = 0, mouseY = 0;
-        let outerX = 0, outerY = 0;
-        
-        window.addEventListener('mousemove', (e) => {
-            mouseX = e.clientX;
-            mouseY = e.clientY;
-            cursorInner.style.transform = `translate(${mouseX - 12}px, ${mouseY - 12}px)`;
-        });
-        
-        function animateCursor() {
-            outerX += (mouseX - outerX) * 0.15;
-            outerY += (mouseY - outerY) * 0.15;
-            cursorOuter.style.transform = `translate(${outerX - 20}px, ${outerY - 20}px)`;
-            requestAnimationFrame(animateCursor);
-        }
-        animateCursor();
-
-        const links = document.querySelectorAll('a, button, .glass-card, .group');
-        links.forEach(link => {
-            link.addEventListener('mouseenter', () => {
-                document.body.classList.add('cursor-hover');
-            });
-            link.addEventListener('mouseleave', () => {
-                document.body.classList.remove('cursor-hover');
-            });
-        });
-
         const lenis = new Lenis({
             duration: 1.2,
             easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),

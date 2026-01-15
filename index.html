@@ -9,7 +9,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
     <script src="https://unpkg.com/lenis@1.1.18/dist/lenis.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Syncopate:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="cursor.css" />
     <style>
         :root {
             --bg-dark: #020202;
@@ -22,7 +21,6 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            cursor: none;
         }
 
         html.lenis, html.lenis body {
@@ -161,14 +159,6 @@
     <!-- Background Elements -->
     <div class="grid-bg"></div>
     <div class="hero-noise"></div>
-
-    <!-- Cursor Elements -->
-    <div id="cursor-outer"></div>
-    <div id="cursor-inner">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M3 2L21 12L12 14L14 22L3 2Z" fill="#00f2ff" stroke="white" stroke-width="1.5"/>
-        </svg>
-    </div>
 
     <!-- HERO SECTION -->
     <header class="relative min-h-screen flex items-center justify-center px-8 overflow-hidden">
@@ -319,38 +309,6 @@
 
     <script src="script.js"></script>
     <script>
-        // Tactical Cursor Implementation
-        const cursorOuter = document.getElementById('cursor-outer');
-        const cursorInner = document.getElementById('cursor-inner');
-        
-        let mouseX = 0, mouseY = 0;
-        let outerX = 0, outerY = 0;
-        
-        window.addEventListener('mousemove', (e) => {
-            mouseX = e.clientX;
-            mouseY = e.clientY;
-            cursorInner.style.transform = `translate(${mouseX - 12}px, ${mouseY - 12}px)`;
-        });
-        
-        function animateCursor() {
-            outerX += (mouseX - outerX) * 0.15;
-            outerY += (mouseY - outerY) * 0.15;
-            cursorOuter.style.transform = `translate(${outerX - 20}px, ${outerY - 20}px)`;
-            requestAnimationFrame(animateCursor);
-        }
-        animateCursor();
-
-        // Hover effects
-        const links = document.querySelectorAll('a, button, .glass-card, .group, .countdown-box');
-        links.forEach(link => {
-            link.addEventListener('mouseenter', () => {
-                document.body.classList.add('cursor-hover');
-            });
-            link.addEventListener('mouseleave', () => {
-                document.body.classList.remove('cursor-hover');
-            });
-        });
-
         // Lenis smooth scroll
         const lenis = new Lenis({
             duration: 1.2,

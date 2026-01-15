@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Доска Миссий | Rise of the Republic</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Syncopate:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #020202;
+            --accent-primary: #00f2ff;
+            --accent-secondary: #7000ff;
+            --text-main: #ffffff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            overflow-x: hidden;
+            line-height: 1.4;
+        }
+
+        /* Grid Background */
+        .grid-bg {
+            position: fixed;
+            inset: 0;
+            background-image: 
+                linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+            background-size: 40px 40px;
+            z-index: -2;
+            pointer-events: none;
+        }
+
+        .hero-noise {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            opacity: 0.03;
+            pointer-events: none;
+            background-image: url('https://grainy-gradients.vercel.app/noise.svg');
+        }
+
+        .font-syncopate { font-family: 'Syncopate', sans-serif; }
+
+        .gradient-text {
+            background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .glow-text {
+            text-shadow: 0 0 20px rgba(0, 242, 255, 0.5), 0 0 40px rgba(112, 0, 255, 0.3);
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.6s cubic-bezier(0.19, 1, 0.22, 1);
+        }
+
+        .glass-card:hover {
+            border-color: var(--accent-primary);
+            background: rgba(255, 255, 255, 0.04);
+            box-shadow: 0 20px 40px rgba(0, 242, 255, 0.15);
+        }
+
+        .hud-line {
+            height: 1px;
+            background: linear-gradient(90deg, var(--accent-primary), transparent);
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            backdrop-filter: blur(20px);
+            background: rgba(2, 2, 2, 0.8);
+            border-bottom: 1px solid rgba(0, 242, 255, 0.1);
+            padding: 1.5rem 2rem;
+        }
+
+        nav .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-family: 'Syncopate', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 700;
+            letter-spacing: 0.3em;
+            color: var(--accent-primary);
+            text-transform: uppercase;
+        }
+
+        .nav-links a {
+            color: rgba(255, 255, 255, 0.6);
+            text-decoration: none;
+            margin: 0 1rem;
+            font-size: 0.85rem;
+            font-weight: 500;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            transition: all 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--accent-primary);
+        }
+
+        .admin-btn {
+            background: rgba(0, 242, 255, 0.1);
+            border: 1px solid var(--accent-primary);
+            color: var(--accent-primary);
+            padding: 0.6rem 1.5rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .admin-btn:hover {
+            background: rgba(0, 242, 255, 0.2);
+            box-shadow: 0 0 20px rgba(0, 242, 255, 0.3);
+        }
+
+        /* Hero Section */
+        .hero-section {
+            margin-top: 80px;
+            min-height: calc(100vh - 80px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4rem 2rem;
+            position: relative;
+            z-index: 10;
+        }
+
+        .hero-content {
+            max-width: 1200px;
+            width: 100%;
+        }
+
+        .hero-content h1 {
+            font-family: 'Syncopate', sans-serif;
+            font-size: clamp(2.5rem, 8vw, 5rem);
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: white;
+            letter-spacing: -0.02em;
+            text-transform: uppercase;
+            line-height: 0.9;
+        }
+
+        .hero-content p {
+            font-size: 0.95rem;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 2rem;
+            max-width: 600px;
+            line-height: 1.6;
+            letter-spacing: 0.05em;
+        }
+
+        .instructions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+            max-width: 1000px;
+        }
+
+        .instruction-card {
+            glass-card;
+            padding: 1.5rem;
+            border: 1px solid rgba(0, 242, 255, 0.1);
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .instruction-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(0, 242, 255, 0.1), transparent);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .instruction-card:hover {
+            border-color: rgba(0, 242, 255, 0.3);
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .instruction-card:hover::before {
+            opacity: 1;
+        }
+
+        .instruction-card strong {
+            color: var(--accent-primary);
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+        }
+
+        .instruction-card span {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Mission List */
+        .mission-section {
+            padding: 0 2rem 4rem 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 10;
+        }
+
+        #mission-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding-bottom: 4rem;
+        }
+
+        .mission-card {
+            glass-card;
+            padding: 2rem;
+            border: 1px solid rgba(0, 242, 255, 0.1);
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.19, 1, 0.22, 1);
+        }
+
+        .mission-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, var(--accent-primary), transparent);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .mission-card:hover::before {
+            opacity: 1;
+        }
+
+        .mission-card:hover {
+            border-color: rgba(0, 242, 255, 0.3);
+            background: rgba(255, 255, 255, 0.04);
+            box-shadow: 0 20px 40px rgba(0, 242, 255, 0.1);
+            transform: translateY(-5px);
+        }
+
+        .mission-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1.5rem;
+        }
+
+        .difficulty-badge {
+            background: rgba(0, 242, 255, 0.1);
+            color: var(--accent-primary);
+            padding: 0.4rem 0.8rem;
+            border-radius: 2px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            border: 1px solid rgba(0, 242, 255, 0.2);
+        }
+
+        .status-badge {
+            padding: 0.4rem 0.8rem;
+            border-radius: 2px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            border: 1px solid;
+        }
+
+        .status-available {
+            background: rgba(0, 200, 100, 0.1);
+            color: #00ff00;
+            border-color: rgba(0, 200, 100, 0.3);
+        }
+
+        .status-locked {
+            background: rgba(112, 0, 255, 0.1);
+            color: #7000ff;
+            border-color: rgba(112, 0, 255, 0.3);
+        }
+
+        .mission-title {
+            font-family: 'Syncopate', sans-serif;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: -0.02em;
+        }
+
+        .mission-description {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin-bottom: 1.5rem;
+        }
+
+        .mission-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid rgba(0, 242, 255, 0.1);
+            padding-top: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .mission-reward {
+            font-size: 0.85rem;
+            color: var(--accent-primary);
+            font-weight: 700;
+            letter-spacing: 0.1em;
+        }
+
+        .mission-time {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        .mission-action {
+            display: flex;
+            gap: 0.8rem;
+        }
+
+        .btn {
+            padding: 0.7rem 1.2rem;
+            border: 1px solid;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex: 1;
+            text-align: center;
+            text-decoration: none;
+            background: transparent;
+            border-radius: 2px;
+        }
+
+        .btn-primary {
+            color: var(--accent-primary);
+            border-color: var(--accent-primary);
+            background: rgba(0, 242, 255, 0.05);
+        }
+
+        .btn-primary:hover {
+            background: rgba(0, 242, 255, 0.15);
+            box-shadow: 0 0 15px rgba(0, 242, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            color: #00ff00;
+            border-color: #00ff00;
+            background: rgba(0, 200, 100, 0.05);
+        }
+
+        .btn-success:hover {
+            background: rgba(0, 200, 100, 0.15);
+            box-shadow: 0 0 15px rgba(0, 200, 100, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .btn-disabled {
+            color: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.2);
+            cursor: not-allowed;
+        }
+
+        /* Modal */
+        .mission-modal {
+            position: fixed;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            padding: 1.5rem;
+        }
+
+        .mission-modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            glass-card;
+            background: rgba(2, 2, 2, 0.9);
+            border: 1px solid rgba(0, 242, 255, 0.2);
+            backdrop-filter: blur(20px);
+            padding: 2.5rem;
+            max-width: 500px;
+            width: 100%;
+            position: relative;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            background: none;
+            border: 1px solid rgba(0, 242, 255, 0.2);
+            font-size: 1.5rem;
+            color: var(--accent-primary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-close:hover {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 15px rgba(0, 242, 255, 0.3);
+            transform: rotate(90deg);
+        }
+
+        .modal-title {
+            font-family: 'Syncopate', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: -0.02em;
+        }
+
+        .modal-description {
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+            font-size: 0.9rem;
+        }
+
+        .modal-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            color: var(--accent-primary);
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+            font-size: 0.8rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        .form-group input {
+            background: rgba(0, 242, 255, 0.05);
+            border: 1px solid rgba(0, 242, 255, 0.2);
+            border-radius: 2px;
+            padding: 0.8rem;
+            color: white;
+            font-family: 'Space Grotesk', sans-serif;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            background: rgba(0, 242, 255, 0.1);
+            box-shadow: 0 0 10px rgba(0, 242, 255, 0.2);
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .modal-buttons button {
+            flex: 1;
+            padding: 0.8rem;
+            border: 1px solid;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-radius: 2px;
+            background: transparent;
+        }
+
+        .modal-buttons .btn-primary {
+            color: var(--accent-primary);
+            border-color: var(--accent-primary);
+            background: rgba(0, 242, 255, 0.05);
+        }
+
+        .modal-buttons .btn-primary:hover {
+            background: rgba(0, 242, 255, 0.15);
+            box-shadow: 0 0 15px rgba(0, 242, 255, 0.3);
+        }
+
+        .modal-buttons .btn-secondary {
+            color: rgba(255, 255, 255, 0.6);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .modal-buttons .btn-secondary:hover {
+            color: white;
+            border-color: white;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: rgba(0, 242, 255, 0.4);
+            border-top: 1px solid rgba(0, 242, 255, 0.1);
+            position: relative;
+            z-index: 10;
+            font-size: 0.8rem;
+            letter-spacing: 0.1em;
+        }
+
+        footer p {
+            margin: 0;
+        }
+        .mission-card {
+            background: rgba(10, 10, 10, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 2.5rem;
+            position: relative;
+            backdrop-filter: blur(10px);
+            transition: transform 0.4s cubic-bezier(0.2, 1, 0.3, 1), border-color 0.4s ease;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .mission-card:hover {
+            transform: translateY(-8px);
+            border-color: rgba(0, 242, 255, 0.3);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            background: rgba(10, 10, 10, 0.8);
+        }
+
+        .mission-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.4s cubic-bezier(0.2, 1, 0.3, 1);
+        }
+
+        .mission-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            background: transparent !important;
+            border: none !important;
+            padding: 0 !important;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        
+        .status-available .status-dot { background: #00ff66; box-shadow: 0 0 10px #00ff66; }
+        .status-locked .status-dot { background: #ff0055; box-shadow: 0 0 10px #ff0055; }
+        
+        .status-text { color: inherit; }
+        .status-available { color: #00ff66 !important; }
+        .status-locked { color: #ff0055 !important; }
+
+        .mission-reward {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .reward-label {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .reward-value {
+            color: white;
+            font-weight: 700;
+            font-size: 0.95rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Grid Background -->
+    <div class="grid-bg"></div>
+    <div class="hero-noise"></div>
+
+    <!-- Navigation -->
+    <nav>
+        <div class="container">
+            <div class="logo">// Миссии</div>
+            <div class="nav-links">
+                <a href="index.html">Главная</a>
+                <a href="quests.html" style="color: var(--accent-primary);">Миссии</a>
+                <a href="sector1.html">Карта</a>
+                <a href="sector2.html">Гайды</a>
+                <a href="sector3.html">Фракции</a>
+                <a href="sector4.html">FAQ</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="hero-content">
+            <h1>Доска <span class="gradient-text">Миссий</span></h1>
+            <p>Выбери миссию, введи свой Game ID и начни выполнять задания для получения награды.</p>
+        </div>
+    </section>
+
+    <!-- Mission List Section -->
+    <section class="mission-section">
+        <div id="mission-list"></div>
+    </section>
+
+    <!-- Modal -->
+    <div id="mission-modal" class="mission-modal">
+        <div class="modal-content">
+            <button id="mission-modal-close" class="modal-close">×</button>
+            <h2 id="mission-modal-title" class="modal-title">Миссия</h2>
+            <p class="modal-description">Введи свой Game ID чтобы заблокировать эту миссию на себя.</p>
+            <form id="mission-form" class="modal-form">
+                <div class="form-group">
+                    <label for="player-id-input">Game ID</label>
+                    <input id="player-id-input" type="text" placeholder="PLAYER-123" required>
+                </div>
+                <div class="modal-buttons">
+                    <button type="submit" class="btn-primary">Заблокировать</button>
+                    <button type="button" id="mission-modal-cancel" class="btn-secondary">Отмена</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <p>© 2026 Система Миссий | Выполняй задания и получай награды</p>
+    </footer>
+
+    <script src="mission.js"></script>
+    <script>
+        // Mission System
+        (function () {
+            const missionContainer = document.getElementById('mission-list');
+            const modal = document.getElementById('mission-modal');
+            if (!missionContainer || !modal || !window.MissionService) return;
+
+            const modalTitle = document.getElementById('mission-modal-title');
+            const form = document.getElementById('mission-form');
+            const playerInput = document.getElementById('player-id-input');
+            const closeBtn = document.getElementById('mission-modal-close');
+            const cancelBtn = document.getElementById('mission-modal-cancel');
+            const LAST_PLAYER_KEY = 'cs_last_player_id';
+            let selectedMissionId = null;
+
+            const getLastPlayerId = () => localStorage.getItem(LAST_PLAYER_KEY) || '';
+            const setLastPlayerId = (val) => localStorage.setItem(LAST_PLAYER_KEY, val);
+
+            const closeModal = () => {
+                modal.classList.remove('active');
+                form.reset();
+                selectedMissionId = null;
+            };
+
+            const openModal = (mission) => {
+                selectedMissionId = mission.id;
+                modalTitle.textContent = mission.title;
+                modal.classList.add('active');
+                const saved = getLastPlayerId();
+                if (saved) playerInput.value = saved;
+                setTimeout(() => playerInput.focus(), 60);
+            };
+
+            const render = () => {
+                const missions = MissionService.getAll();
+                const ownerId = getLastPlayerId();
+                missionContainer.innerHTML = '';
+
+                missions.forEach((mission) => {
+                    const locked = mission.status === 'locked';
+                    const isOwner = locked && mission.lockedBy && mission.lockedBy === ownerId;
+                    
+                    const card = document.createElement('div');
+                    card.className = 'mission-card';
+                    card.innerHTML = `
+                        <div class="mission-header">
+                            <span class="difficulty-badge">${mission.difficulty}</span>
+                            <span class="status-badge ${locked ? 'status-locked' : 'status-available'}">
+                                <span class="status-dot"></span>
+                                <span class="status-text">${locked ? `LOCKED ${mission.lockedBy ? '/ ' + mission.lockedBy : ''}` : 'AVAILABLE'}</span>
+                            </span>
+                        </div>
+                        <h3 class="mission-title">${mission.title}</h3>
+                        <p class="mission-description">${mission.summary}</p>
+                        <div class="mission-footer">
+                            <div class="mission-reward">
+                                <span class="reward-label">Награда</span>
+                                <span class="reward-value">${mission.reward}</span>
+                            </div>
+                            <div class="mission-action">
+                                ${locked ? (isOwner
+                                    ? `<button data-complete="${mission.id}" class="btn btn-success">Подтвердить</button>`
+                                    : `<button class="btn btn-disabled" disabled>ЗАНЯТО</button>`
+                                )
+                                : `<button data-take="${mission.id}" class="btn btn-primary">ПРИНЯТЬ</button>`}
+                            </div>
+                        </div>
+                    `;
+                    missionContainer.appendChild(card);
+                });
+
+                // GSAP Animations
+                gsap.from(".mission-card", {
+                    y: 30,
+                    opacity: 0,
+                    duration: 0.8,
+                    stagger: 0.1,
+                    ease: "power3.out"
+                });
+            };
+
+            missionContainer.addEventListener('click', (event) => {
+                const takeId = event.target.getAttribute('data-take');
+                const completeId = event.target.getAttribute('data-complete');
+
+                if (takeId) {
+                    const mission = MissionService.getAll().find((m) => m.id === takeId);
+                    if (mission) openModal(mission);
+                }
+
+                if (completeId) {
+                    const ownerId = getLastPlayerId();
+                    const result = MissionService.releaseMission(completeId, ownerId);
+                    if (!result.success && result.reason === 'locked-by-other') {
+                        alert('Эта миссия заблокирована другим Game ID. Используй тот же ID который ее заблокировал.');
+                        return;
+                    }
+                    render();
+                }
+            });
+
+            form.addEventListener('submit', (event) => {
+                event.preventDefault();
+                const playerId = playerInput.value.trim();
+                if (!selectedMissionId || !playerId) return;
+                setLastPlayerId(playerId);
+                const outcome = MissionService.lockMission(selectedMissionId, playerId);
+                if (!outcome.success) {
+                    if (outcome.reason === 'locked-by-other') {
+                        alert('Эта миссия уже заблокирована другим Game ID.');
+                    } else {
+                        alert('Не удалось заблокировать миссию. Попробуй еще раз.');
+                    }
+                    return;
+                }
+                closeModal();
+                render();
+            });
+
+            modal.addEventListener('click', (event) => {
+                if (event.target === modal) closeModal();
+            });
+
+            closeBtn.addEventListener('click', closeModal);
+            cancelBtn.addEventListener('click', closeModal);
+
+            render();
+        })();
+    </script>
+</body>
+</html>
