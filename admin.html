@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mission Admin | CYBER STRIKE</title>
+  <title>Управление Миссиями | CYBER STRIKE</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
@@ -16,43 +16,43 @@
   <main class="max-w-6xl mx-auto px-6 space-y-10">
     <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
       <div>
-        <p class="text-cyan-400 text-xs uppercase tracking-[0.35em]">Control Deck</p>
-        <h1 class="text-3xl md:text-4xl font-bold">Mission Administration</h1>
-        <p class="text-slate-400 text-sm mt-2">Create, edit, or purge missions. Changes persist locally in this browser via localStorage.</p>
+        <p class="text-cyan-400 text-xs uppercase tracking-[0.35em]">Панель Управления</p>
+        <h1 class="text-3xl md:text-4xl font-bold">Администрирование Миссий</h1>
+        <p class="text-slate-400 text-sm mt-2">Создавайте, редактируйте или удаляйте миссии. Изменения сохраняются локально в браузере.</p>
       </div>
       <div class="flex gap-3">
-        <button id="reset-missions" class="px-4 py-2 text-sm font-semibold text-black gradient rounded-md shadow-lg">Reset to defaults</button>
-        <a href="sector5.html" class="px-4 py-2 text-sm font-semibold border border-white/20 rounded-md hover:border-cyan-400 transition">Back to site</a>
+        <button id="reset-missions" class="px-4 py-2 text-sm font-semibold text-black gradient rounded-md shadow-lg">Сброс настроек</button>
+        <a href="sector5.html" class="px-4 py-2 text-sm font-semibold border border-white/20 rounded-md hover:border-cyan-400 transition">Назад на сайт</a>
       </div>
     </header>
 
     <section class="glass p-6 shadow-xl">
       <form id="mission-form" class="space-y-4">
         <div class="grid md:grid-cols-2 gap-4">
-          <label class="block text-sm">Title
-            <input id="title" name="title" type="text" class="mt-1 w-full bg-black/40 border border-white/10 rounded-md px-3 py-2" required>
+          <label class="block text-sm">Название Миссии
+            <input id="title" name="title" type="text" class="mt-1 w-full bg-black/40 border border-white/10 rounded-md px-3 py-2" placeholder="Например: Захват флага" required>
           </label>
-          <label class="block text-sm">Difficulty / Role
-            <input id="difficulty" name="difficulty" type="text" class="mt-1 w-full bg-black/40 border border-white/10 rounded-md px-3 py-2" placeholder="High Risk" required>
+          <label class="block text-sm">Сложность / Роль
+            <input id="difficulty" name="difficulty" type="text" class="mt-1 w-full bg-black/40 border border-white/10 rounded-md px-3 py-2" placeholder="Высокий риск" required>
           </label>
         </div>
-        <label class="block text-sm">Summary
-          <textarea id="summary" name="summary" rows="3" class="mt-1 w-full bg-black/40 border border-white/10 rounded-md px-3 py-2" required></textarea>
+        <label class="block text-sm">Описание
+          <textarea id="summary" name="summary" rows="3" class="mt-1 w-full bg-black/40 border border-white/10 rounded-md px-3 py-2" placeholder="Краткое описание задачи..." required></textarea>
         </label>
-        <label class="block text-sm">Reward
-          <input id="reward" name="reward" type="text" class="mt-1 w-full bg-black/40 border border-white/10 rounded-md px-3 py-2" placeholder="XP + Loot" required>
+        <label class="block text-sm">Награда
+          <input id="reward" name="reward" type="text" class="mt-1 w-full bg-black/40 border border-white/10 rounded-md px-3 py-2" placeholder="XP + Лут" required>
         </label>
         <div class="flex gap-3">
-          <button type="submit" class="px-4 py-2 bg-cyan-400 text-black font-semibold rounded-md">Save Mission</button>
-          <button type="button" id="cancel-edit" class="px-4 py-2 border border-white/20 rounded-md hidden">Cancel edit</button>
+          <button type="submit" class="px-4 py-2 bg-cyan-400 text-black font-semibold rounded-md">Сохранить Миссию</button>
+          <button type="button" id="cancel-edit" class="px-4 py-2 border border-white/20 rounded-md hidden">Отмена</button>
         </div>
       </form>
     </section>
 
     <section class="glass p-6 shadow-xl">
       <div class="flex items-center justify-between mb-4">
-        <h2 class="text-xl font-semibold">Mission List</h2>
-        <p class="text-xs text-slate-400">Lock state is controlled on the player page.</p>
+        <h2 class="text-xl font-semibold">Список Миссий</h2>
+        <p class="text-xs text-slate-400">Статус блокировки управляется игроками.</p>
       </div>
       <div id="mission-list" class="space-y-3"></div>
     </section>
@@ -80,6 +80,7 @@
         const missions = MissionService.getAll();
         listEl.innerHTML = '';
         missions.forEach((mission) => {
+          const statusText = mission.status === 'locked' ? 'Заблокировано' : (mission.status === 'available' ? 'Доступно' : mission.status);
           const card = document.createElement('div');
           card.className = 'flex flex-col md:flex-row md:items-center justify-between gap-3 px-4 py-3 bg-black/30 border border-white/10 rounded-md';
           card.innerHTML = `
@@ -87,12 +88,12 @@
               <p class="text-xs uppercase tracking-[0.25em] text-cyan-400">${mission.difficulty}</p>
               <h3 class="text-lg font-semibold">${mission.title}</h3>
               <p class="text-sm text-slate-400">${mission.summary}</p>
-              <p class="text-xs text-slate-500 mt-1">Reward: ${mission.reward}</p>
-              <p class="text-xs mt-1 ${mission.status === 'locked' ? 'text-amber-400' : 'text-emerald-400'}">Status: ${mission.status}${mission.lockedBy ? ` (by ${mission.lockedBy})` : ''}</p>
+              <p class="text-xs text-slate-500 mt-1">Награда: ${mission.reward}</p>
+              <p class="text-xs mt-1 ${mission.status === 'locked' ? 'text-amber-400' : 'text-emerald-400'}">Статус: ${statusText}${mission.lockedBy ? ` (кем: ${mission.lockedBy})` : ''}</p>
             </div>
             <div class="flex gap-2">
-              <button data-edit="${mission.id}" class="px-3 py-2 text-sm border border-white/20 rounded-md hover:border-cyan-400">Edit</button>
-              <button data-delete="${mission.id}" class="px-3 py-2 text-sm border border-red-500/50 text-red-300 rounded-md hover:bg-red-500/10">Delete</button>
+              <button data-edit="${mission.id}" class="px-3 py-2 text-sm border border-white/20 rounded-md hover:border-cyan-400">Изменить</button>
+              <button data-delete="${mission.id}" class="px-3 py-2 text-sm border border-red-500/50 text-red-300 rounded-md hover:bg-red-500/10">Удалить</button>
             </div>
           `;
           listEl.appendChild(card);
@@ -139,7 +140,7 @@
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }
         if (deleteId) {
-          if (confirm('Delete this mission?')) {
+          if (confirm('Удалить эту миссию?')) {
             MissionService.removeMission(deleteId);
             if (editingId === deleteId) clearForm();
             render();
@@ -148,7 +149,7 @@
       });
 
       resetBtn.addEventListener('click', () => {
-        if (confirm('Reset missions to default seed?')) {
+        if (confirm('Сбросить миссии к начальным значениям?')) {
           MissionService.reset();
           clearForm();
           render();

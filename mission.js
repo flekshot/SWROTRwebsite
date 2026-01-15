@@ -4,30 +4,30 @@
   const defaultMissions = [
     {
       id: 'mission-alpha',
-      title: 'Secure the Relay',
-      summary: 'Stabilize the uplink tower and capture a clean data stream.',
-      difficulty: 'High Risk',
-      reward: '750 XP + Priority Loot',
+      title: 'Захват ретранслятора',
+      summary: 'Стабилизируйте башню связи и перехватите чистый поток данных.',
+      difficulty: 'Высокий риск',
+      reward: '750 XP + Приоритетный лут',
       status: 'available',
       lockedBy: null,
       lockedAt: null
     },
     {
       id: 'mission-bravo',
-      title: 'Ghost Extraction',
-      summary: 'Extract a downed operative without triggering thermal sensors.',
-      difficulty: 'Stealth',
-      reward: '600 XP + Stealth Cache',
+      title: 'Призрачная эвакуация',
+      summary: 'Эвакуируйте сбитого оперативника, не активируя тепловые датчики.',
+      difficulty: 'Скрытность',
+      reward: '600 XP + Скрытый тайник',
       status: 'available',
       lockedBy: null,
       lockedAt: null
     },
     {
       id: 'mission-charlie',
-      title: 'Power Grid Override',
-      summary: 'Cut hostile power feeds and reroute to friendly cores.',
-      difficulty: 'Technical',
-      reward: '500 XP + Core Credits',
+      title: 'Перегрузка энергосети',
+      summary: 'Отключите вражеские источники питания и перенаправьте энергию на союзные ядра.',
+      difficulty: 'Технический',
+      reward: '500 XP + Кредиты ядра',
       status: 'available',
       lockedBy: null,
       lockedAt: null

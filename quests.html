@@ -6,6 +6,8 @@
     <title>Доска Миссий | Rise of the Republic</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://unpkg.com/lenis@1.1.18/dist/lenis.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Syncopate:wght@400;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -82,67 +84,31 @@
         }
 
         /* Navigation */
-        nav {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 100;
-            backdrop-filter: blur(20px);
-            background: rgba(2, 2, 2, 0.8);
-            border-bottom: 1px solid rgba(0, 242, 255, 0.1);
-            padding: 1.5rem 2rem;
+        .nav-link {
+            color: rgba(255, 255, 255, 0.7);
+            transition: color 0.3s ease;
         }
 
-        nav .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        .nav-link:hover {
+            color: var(--accent-primary);
         }
 
-        .logo {
+        .animated-gradient {
+            background: linear-gradient(90deg, #00f2ff, #7000ff, #ff00ff, #ffa500, #00f2ff);
+            background-size: 300% 100%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientShift 8s ease infinite;
             font-family: 'Syncopate', sans-serif;
-            font-size: 1.2rem;
-            font-weight: 700;
-            letter-spacing: 0.3em;
-            color: var(--accent-primary);
-            text-transform: uppercase;
+            font-weight: bold;
+            letter-spacing: -0.02em;
         }
 
-        .nav-links a {
-            color: rgba(255, 255, 255, 0.6);
-            text-decoration: none;
-            margin: 0 1rem;
-            font-size: 0.85rem;
-            font-weight: 500;
-            letter-spacing: 0.2em;
-            text-transform: uppercase;
-            transition: all 0.3s ease;
-        }
-
-        .nav-links a:hover {
-            color: var(--accent-primary);
-        }
-
-        .admin-btn {
-            background: rgba(0, 242, 255, 0.1);
-            border: 1px solid var(--accent-primary);
-            color: var(--accent-primary);
-            padding: 0.6rem 1.5rem;
-            font-size: 0.75rem;
-            font-weight: 700;
-            letter-spacing: 0.2em;
-            text-transform: uppercase;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-decoration: none;
-        }
-
-        .admin-btn:hover {
-            background: rgba(0, 242, 255, 0.2);
-            box-shadow: 0 0 20px rgba(0, 242, 255, 0.3);
+        @keyframes gradientShift {
+            0% { background-position: 0% center; }
+            50% { background-position: 100% center; }
+            100% { background-position: 0% center; }
         }
 
         /* Hero Section */
@@ -667,27 +633,54 @@
     <div class="hero-noise"></div>
 
     <!-- Navigation -->
-    <nav>
-        <div class="container">
-            <div class="logo">// Миссии</div>
-            <div class="nav-links">
-                <a href="index.html">Главная</a>
-                <a href="quests.html" style="color: var(--accent-primary);">Миссии</a>
-                <a href="sector1.html">Карта</a>
-                <a href="sector2.html">Гайды</a>
-                <a href="sector3.html">Фракции</a>
-                <a href="sector4.html">FAQ</a>
+    <nav class="fixed top-0 left-0 w-full z-50 px-8 py-6 border-b border-white/10 backdrop-blur-xl bg-black/50">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <a href="index.html" class="animated-gradient text-xl">Городской Ивент</a>
+            <div class="hidden md:flex items-center gap-12">
+                <a href="index.html" class="nav-link">Главная</a>
+                <a href="quests.html" class="nav-link text-cyan-400">Миссии</a>
+                <a href="sector1.html" class="nav-link">Карта</a>
+                <a href="sector2.html" class="nav-link">Гайды</a>
+                <a href="sector3.html" class="nav-link">Фракции</a>
+                <a href="sector4.html" class="nav-link">FAQ</a>
             </div>
         </div>
     </nav>
 
     <!-- Hero Section -->
-    <section class="hero-section">
-        <div class="hero-content">
-            <h1>Доска <span class="gradient-text">Миссий</span></h1>
-            <p>Выбери миссию, введи свой Game ID и начни выполнять задания для получения награды.</p>
+    <header class="relative min-h-screen flex items-center justify-center px-8 overflow-hidden pt-24">
+        <div class="absolute inset-0 z-0">
+            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80vw] h-[80vw] border border-cyan-400/[0.03] rounded-full"></div>
+            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60vw] h-[60vw] border border-white/[0.02] rounded-full"></div>
+            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[40vw] h-[40vw] border border-cyan-400/[0.05] rounded-full"></div>
         </div>
-    </section>
+
+        <div class="max-w-7xl mx-auto w-full relative z-10">
+            <div class="grid grid-cols-12 gap-8">
+                <div class="col-span-12 lg:col-span-4 hero-reveal">
+                    <div class="space-y-12">
+                        <div>
+                            <span class="text-cyan-400 font-bold tracking-[0.4em] uppercase text-[9px] mb-4 block">// Система Заданий</span>
+                            <p class="text-lg text-neutral-400 leading-relaxed opacity-80">
+                                Введи  ID и начни выполнять задания из списка доступных. 
+                            </p>
+                        </div>
+           
+                        </a>
+                    </div>
+                </div>
+
+                <div class="col-span-12 lg:col-span-8 text-center lg:text-right hero-reveal">
+                    <div class="relative inline-block">
+                        <h1 class="font-syncopate text-[clamp(4rem,16vw,12rem)] font-bold leading-[0.75] tracking-tighter mb-4">
+                            ДОСКА<br>
+                            <span class="gradient-text">МИССИЙ</span>
+                        </h1>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
 
     <!-- Mission List Section -->
     <section class="mission-section">
@@ -768,7 +761,7 @@
                             <span class="difficulty-badge">${mission.difficulty}</span>
                             <span class="status-badge ${locked ? 'status-locked' : 'status-available'}">
                                 <span class="status-dot"></span>
-                                <span class="status-text">${locked ? `LOCKED ${mission.lockedBy ? '/ ' + mission.lockedBy : ''}` : 'AVAILABLE'}</span>
+                                <span class="status-text">${locked ? `ЗАБЛОКИРОВАНО ${mission.lockedBy ? '/ ' + mission.lockedBy : ''}` : 'ДОСТУПНО'}</span>
                             </span>
                         </div>
                         <h3 class="mission-title">${mission.title}</h3>
@@ -847,6 +840,27 @@
 
             render();
         })();
+
+        // Animations & Smooth Scroll
+        const lenis = new Lenis({
+            duration: 1.2,
+            easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+        });
+        function raf(time) {
+            lenis.raf(time);
+            requestAnimationFrame(raf);
+        }
+        requestAnimationFrame(raf);
+
+        gsap.registerPlugin(ScrollTrigger);
+        gsap.from(".hero-reveal", {
+            y: 40,
+            opacity: 0,
+            duration: 1.2,
+            stagger: 0.2,
+            ease: "power3.out",
+            clearProps: "all"
+        });
     </script>
 </body>
 </html>
