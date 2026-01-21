@@ -74,12 +74,35 @@
             backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.05);
             transition: all 0.6s cubic-bezier(0.19, 1, 0.22, 1);
+            position: relative;
+            overflow: hidden;
         }
 
         .glass-card:hover {
             border-color: var(--accent-primary);
             background: rgba(255, 255, 255, 0.04);
             box-shadow: 0 20px 40px rgba(0, 242, 255, 0.15);
+        }
+
+        .card-bg {
+            position: absolute;
+            inset: 0;
+            background-size: cover;
+            background-position: center;
+            opacity: 0.2;
+            transition: transform 0.6s ease, opacity 0.6s ease;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .glass-card:hover .card-bg {
+            transform: scale(1.1);
+            opacity: 0.3;
+        }
+
+        .glass-card > *:not(.card-bg) {
+            position: relative;
+            z-index: 1;
         }
 
         .site-footer {
@@ -196,16 +219,19 @@
         <div class="max-w-7xl mx-auto">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div class="glass-card p-10 section-reveal">
-                    <h3 class="text-cyan-400 font-bold font-syncopate text-2xl mb-4"> Bounty Hunters</h3>
+                    <div class="card-bg" style="background-image: url('images/free_sector.png');"></div>
+                    <h3 class="text-yellow-400 font-bold font-syncopate text-2xl mb-4"> Bounty Hunters</h3>
                     <p class="text-neutral-400 leading-relaxed">Независимые наемники и охотники. Вступайте в опасные миссии за щедрые награды. Никакой верности, только деньги.</p>
                 </div>
 
                 <div class="glass-card p-10 section-reveal">
-                    <h3 class="text-cyan-400 font-bold font-syncopate text-2xl mb-4"> Police Department of Coruscant</h3>
+                    <div class="card-bg" style="background-image: url('images/factions.jpeg');"></div>
+                    <h3 class="text-red-400 font-bold font-syncopate text-2xl mb-4"> Police Department of Coruscant</h3>
                     <p class="text-neutral-400 leading-relaxed">Охраняйте закон и порядок города. Служите справедливости и получайте официальную зарплату. Честь и долг.</p>
                 </div>
 
                 <div class="glass-card p-10 section-reveal">
+                    <div class="card-bg" style="background-image: url('images/terminal.png');"></div>
                     <h3 class="text-cyan-400 font-bold font-syncopate text-2xl mb-4">Ваша Организация</h3>
                     <p class="text-neutral-400 leading-relaxed">Создайте или присоединитесь к своей организации. Определяйте правила, цели и структуру вместе с членами.</p>
                 </div>
