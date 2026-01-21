@@ -1,5 +1,6 @@
 (function () {
   const STORAGE_KEY = 'cs_missions_v1';
+  const LOG_KEY = 'cs_mission_logs_v1';
 
   const defaultMissions = [
     {
@@ -50,6 +51,32 @@
     }
   };
 
+  // Logging System
+  const saveLogs = (logs) => localStorage.setItem(LOG_KEY, JSON.stringify(logs));
+  
+  const getLogs = () => {
+    const raw = localStorage.getItem(LOG_KEY);
+    if (!raw) return [];
+    try {
+      return JSON.parse(raw);
+    } catch (err) {
+      return [];
+    }
+  };
+
+  const logAction = (action, details) => {
+    const logs = getLogs();
+    const entry = {
+      id: Date.now().toString(36) + Math.random().toString(36).substr(2),
+      timestamp: Date.now(),
+      action,
+      details
+    };
+    logs.unshift(entry); // Add to beginning
+    if (logs.length > 50) logs.pop(); // Keep last 50
+    saveLogs(logs);
+  };
+
   const ensureList = () => {
     const cached = load();
     if (cached && Array.isArray(cached)) {
@@ -82,6 +109,7 @@
     };
     list.push(mission);
     persist(list);
+    logAction('MISSION_CREATE', `Создана миссия: ${mission.title}`);
     return mission;
   };
 
@@ -89,18 +117,23 @@
     const list = ensureList();
     const idx = list.findIndex((m) => m.id === id);
     if (idx === -1) return null;
+    const oldTitle = list[idx].title;
     list[idx] = {
       ...list[idx],
       ...updates,
       id: list[idx].id
     };
     persist(list);
+    logAction('MISSION_UPDATE', `Обновлена миссия: ${oldTitle}`);
     return list[idx];
   };
 
   const removeMission = (id) => {
-    const list = ensureList().filter((m) => m.id !== id);
-    persist(list);
+    const list = ensureList();
+    const mission = list.find((m) => m.id === id);
+    const newList = list.filter((m) => m.id !== id);
+    persist(newList);
+    if(mission) logAction('MISSION_DELETE', `Удалена миссия: ${mission.title}`);
     return true;
   };
 
@@ -116,6 +149,7 @@
     mission.lockedBy = playerId;
     mission.lockedAt = Date.now();
     persist(list);
+    logAction('MISSION_LOCK', `Миссия "${mission.title}" заблокирована игроком ${playerId}`);
     return { success: true, mission };
   };
 
@@ -130,10 +164,18 @@
     mission.lockedBy = null;
     mission.lockedAt = null;
     persist(list);
+    logAction('MISSION_RELEASE', `Миссия "${mission.title}" освобождена`);
     return { success: true, mission };
   };
 
-  const reset = () => persist(clone(defaultMissions));
+  const reset = () => {
+    persist(clone(defaultMissions));
+    logAction('SYSTEM_RESET', 'Сброс всех миссий к начальным настройкам');
+  };
+
+  const clearLogs = () => {
+    saveLogs([]);
+  };
 
   window.MissionService = {
     getAll,
@@ -142,6 +184,9 @@
     removeMission,
     lockMission,
     releaseMission,
-    reset
+    reset,
+    getLogs,
+    logAction,
+    clearLogs
   };
 })();

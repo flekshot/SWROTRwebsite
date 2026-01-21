@@ -13,6 +13,19 @@
   </style>
 </head>
 <body class="min-h-screen py-12">
+  <!-- Security Overlay -->
+  <div id="security-overlay" class="fixed inset-0 z-50 bg-[#030712] flex items-center justify-center transition-opacity duration-500">
+    <div class="glass p-8 max-w-md w-full space-y-6 text-center shadow-2xl border border-cyan-500/20">
+        <div class="text-cyan-400 text-6xl mb-4 animate-pulse">🔒</div>
+        <h2 class="text-2xl font-bold uppercase tracking-widest text-cyan-400">Доступ запрещен</h2>
+        <p class="text-slate-400 text-sm">В системе активен протокол динамической защиты. Введите код безопасности из консоли (F12).</p>
+        <form id="security-form" class="space-y-4">
+            <input type="text" id="security-code" class="w-full bg-black/50 border border-cyan-500/30 rounded-md px-4 py-3 text-center text-xl tracking-[0.5em] text-cyan-400 focus:outline-none focus:border-cyan-400 transition placeholder:tracking-normal" placeholder="PASSWORD" autocomplete="off">
+            <button type="submit" class="w-full bg-cyan-500/10 border border-cyan-500/50 hover:bg-cyan-500 hover:text-black text-cyan-400 font-bold py-3 rounded-md transition uppercase tracking-wider">Разблокировать</button>
+        </form>
+    </div>
+  </div>
+
   <main class="max-w-6xl mx-auto px-6 space-y-10">
     <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
       <div>
@@ -22,7 +35,7 @@
       </div>
       <div class="flex gap-3">
         <button id="reset-missions" class="px-4 py-2 text-sm font-semibold text-black gradient rounded-md shadow-lg">Сброс настроек</button>
-        <a href="sector5.html" class="px-4 py-2 text-sm font-semibold border border-white/20 rounded-md hover:border-cyan-400 transition">Назад на сайт</a>
+        <a href="sector1.html" class="px-4 py-2 text-sm font-semibold border border-white/20 rounded-md hover:border-cyan-400 transition">Назад на сайт</a>
       </div>
     </header>
 
@@ -56,16 +69,85 @@
       </div>
       <div id="mission-list" class="space-y-3"></div>
     </section>
+
+    <!-- System Logs Section -->
+    <section class="glass p-6 shadow-xl border-t-4 border-cyan-500/20">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl font-semibold flex items-center gap-2">
+           <span class="text-cyan-400">📜</span> Системные Логи
+        </h2>
+        <button id="clear-logs" class="text-xs text-red-400 hover:text-red-300 transition uppercase tracking-wider">Очистить логи</button>
+      </div>
+      <div id="system-logs" class="space-y-2 max-h-60 overflow-y-auto pr-2 font-mono text-xs">
+          <!-- Logs will be injected here -->
+      </div>
+    </section>
   </main>
 
   <script src="mission.js"></script>
   <script>
+    // Security System Logic
+    (function() {
+        const overlay = document.getElementById('security-overlay');
+        const form = document.getElementById('security-form');
+        const input = document.getElementById('security-code');
+        
+        // Pool of 12 cryptic passwords
+        const passPool = [
+            '#AX-99', '@ZY-21', '!KL-77', '$WQ-34', 
+            '%MN-55', '^OP-12', '&GH-88', '*EF-43', 
+            '(IJ-66', ')UV-09', '{CD-22}', '}ST-11'
+        ];
+        
+        // Select random password
+        const code = passPool[Math.floor(Math.random() * passPool.length)];
+        
+        console.clear();
+        console.log('%c 🛡️ SYSTEM SECURITY PROTOCOL 🛡️ ', 'background: #00f2ff; color: #000; font-size: 20px; padding: 10px; border-radius: 4px; font-weight: bold;');
+        console.log(`%c ACCESS PASSWORD: ${code}`, 'color: #00f2ff; font-size: 24px; font-weight: bold; margin-top: 10px; border: 2px dashed #00f2ff; padding: 5px 15px;');
+        console.log('%c Введите этот пароль для доступа к панели управления.', 'color: #94a3b8; margin-top: 5px; font-style: italic;');
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            if (input.value === code) {
+                overlay.style.opacity = '0';
+                setTimeout(() => overlay.remove(), 500);
+                if (window.MissionService && window.MissionService.logAction) {
+                    window.MissionService.logAction('SYSTEM_ACCESS', 'Успешный вход в панель администратора');
+                    // Force re-render to show new log
+                    const logsEl = document.getElementById('system-logs');
+                    if (logsEl) {
+                        // We need to access renderLogs from here, but it's inside the other IIFE
+                        // Better to trigger a custom event or just let the user see it on next action/refresh
+                        // Or we can move renderLogs to global scope, but let's keep it simple.
+                        // Ideally we'd dispatch an event.
+                        window.dispatchEvent(new CustomEvent('admin:logged-in'));
+                    }
+                }
+            } else {
+                input.value = '';
+                input.placeholder = 'ERROR';
+                input.classList.add('border-red-500', 'text-red-500');
+                if (window.MissionService && window.MissionService.logAction) {
+                     window.MissionService.logAction('ACCESS_DENIED', 'Неудачная попытка входа в систему');
+                }
+                setTimeout(() => {
+                    input.classList.remove('border-red-500', 'text-red-500');
+                    input.placeholder = 'CODE';
+                }, 1000);
+            }
+        });
+    })();
+
+
     (function () {
       if (!window.MissionService) return;
       const form = document.getElementById('mission-form');
       const resetBtn = document.getElementById('reset-missions');
       const cancelBtn = document.getElementById('cancel-edit');
       const listEl = document.getElementById('mission-list');
+      const logsEl = document.getElementById('system-logs');
+      const clearLogsBtn = document.getElementById('clear-logs');
 
       let editingId = null;
 
@@ -74,6 +156,28 @@
         summary: document.getElementById('summary'),
         difficulty: document.getElementById('difficulty'),
         reward: document.getElementById('reward')
+      };
+
+      const renderLogs = () => {
+          if (!MissionService.getLogs) return;
+          const logs = MissionService.getLogs();
+          if (logs.length === 0) {
+              logsEl.innerHTML = '<p class="text-slate-600 italic text-center py-4">Нет записей в журнале</p>';
+              return;
+          }
+          logsEl.innerHTML = logs.map(log => {
+              const date = new Date(log.timestamp).toLocaleString('ru-RU');
+              const colorClass = log.action.includes('DELETE') ? 'text-red-400' : 
+                               (log.action.includes('CREATE') ? 'text-green-400' : 
+                               (log.action.includes('LOCK') ? 'text-amber-400' : 'text-cyan-400'));
+              return `
+                <div class="flex gap-3 border-b border-white/5 pb-2 last:border-0 hover:bg-white/5 p-2 rounded transition">
+                    <span class="text-slate-500 min-w-[140px]">${date}</span>
+                    <span class="${colorClass} font-bold min-w-[120px]">[${log.action}]</span>
+                    <span class="text-slate-300">${log.details}</span>
+                </div>
+              `;
+          }).join('');
       };
 
       const render = () => {
@@ -98,7 +202,9 @@
           `;
           listEl.appendChild(card);
         });
+        renderLogs();
       };
+
 
       const clearForm = () => {
         editingId = null;
@@ -155,6 +261,15 @@
           render();
         }
       });
+      
+      clearLogsBtn.addEventListener('click', () => {
+          if(confirm('Очистить историю событий?')) {
+              MissionService.clearLogs();
+              render();
+          }
+      });
+      
+      window.addEventListener('admin:logged-in', render);
 
       render();
     })();
