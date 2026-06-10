@@ -4,7 +4,6 @@
    Автоматически добавляет на страницу:
      • звёздное небо (#starfield, canvas)
      • сканлайны (.scanlines + .scan-beam)
-     • силуэт Корусанта с маяками (.coruscant-skyline)
      • трафик спидеров (.speeder-traffic)
      • мобильное hamburger-меню (из .site-nav .nav-links)
      • подсветку активного пункта меню по URL
@@ -40,7 +39,7 @@
         const resize = () => {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
-            const count = Math.min(220, Math.floor(canvas.width * canvas.height / 7000));
+            const count = Math.min(340, Math.floor(canvas.width * canvas.height / 4500));
             stars = Array.from({ length: count }, () => ({
                 x: Math.random() * canvas.width,
                 y: Math.random() * canvas.height,
@@ -72,15 +71,6 @@
     // ── Сканлайны ──────────────────────────────────────────────
     if (!document.querySelector('.scanlines')) inject('<div class="scanlines"></div>');
     if (!document.querySelector('.scan-beam')) inject('<div class="scan-beam"></div>');
-
-    // ── Силуэт Корусанта ───────────────────────────────────────
-    if (!document.querySelector('.coruscant-skyline')) {
-        inject(`<div class="coruscant-skyline">
-            <span class="skyline-beacon b1"></span>
-            <span class="skyline-beacon b2"></span>
-            <span class="skyline-beacon gold b3"></span>
-        </div>`);
-    }
 
     // ── Трафик спидеров ────────────────────────────────────────
     if (!document.querySelector('.speeder-traffic')) {

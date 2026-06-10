@@ -1,9 +1,9 @@
 /* ============================================================
    Coruscant Theme — Rise of the Republic
    Общий стиль для всех страниц: золото + янтарь на тёмно-синем,
-   звёздное небо, сканлайны, силуэт Корусанта, трафик спидеров,
+   звёздное небо, сканлайны, трафик спидеров,
    навигация с мобильным меню.
-   Декор-элементы (.scanlines, .coruscant-skyline, .speeder-traffic,
+   Декор-элементы (.scanlines, .speeder-traffic,
    #starfield, мобильное меню) автоматически создаёт theme.js.
    ============================================================ */
 
@@ -75,66 +75,6 @@ body {
     z-index: -3;
     display: block;
     pointer-events: none;
-}
-
-/* ── Силуэт Корусанта: башни + городское зарево ───────────── */
-.coruscant-skyline {
-    position: fixed;
-    left: 0; right: 0; bottom: 0;
-    height: 24vh;
-    min-height: 150px;
-    z-index: -2;
-    pointer-events: none;
-    background-image:
-        /* зарево города */
-        linear-gradient(to top, rgba(255, 140, 0, 0.13), rgba(255, 140, 0, 0.04) 40%, transparent 72%),
-        /* ближние башни (тёмные) */
-        linear-gradient(#05050F, #05050F),
-        linear-gradient(#05050F, #05050F),
-        linear-gradient(#05050F, #05050F),
-        linear-gradient(#05050F, #05050F),
-        linear-gradient(#05050F, #05050F),
-        linear-gradient(#05050F, #05050F),
-        /* дальние башни (чуть светлее) */
-        linear-gradient(#10102B, #10102B),
-        linear-gradient(#10102B, #10102B),
-        linear-gradient(#10102B, #10102B),
-        linear-gradient(#10102B, #10102B),
-        linear-gradient(#10102B, #10102B);
-    background-repeat: no-repeat;
-    background-position:
-        bottom,
-        4% bottom, 20% bottom, 38% bottom, 60% bottom, 83% bottom, 97% bottom,
-        0% bottom, 13% bottom, 30% bottom, 52% bottom, 76% bottom;
-    background-size:
-        100% 100%,
-        7% 78%, 5% 60%, 8% 92%, 6% 72%, 7% 86%, 5% 64%,
-        5% 52%, 4% 68%, 6% 46%, 5% 62%, 4% 50%;
-}
-
-/* мигающие маяки на башнях */
-.skyline-beacon {
-    position: absolute;
-    width: 4px;
-    height: 4px;
-    border-radius: 50%;
-    background: var(--red);
-    box-shadow: 0 0 8px var(--red);
-    animation: beaconBlink 2.4s ease-in-out infinite;
-}
-
-.skyline-beacon.gold {
-    background: var(--gold);
-    box-shadow: 0 0 8px var(--gold);
-}
-
-.skyline-beacon.b1 { left: 41%; bottom: 90%; }
-.skyline-beacon.b2 { left: 86%; bottom: 84%; animation-delay: 0.8s; }
-.skyline-beacon.b3 { left: 6.5%; bottom: 76%; animation-delay: 1.5s; }
-
-@keyframes beaconBlink {
-    0%, 100% { opacity: 0.1; }
-    50% { opacity: 1; }
 }
 
 /* ── Трафик спидеров (световые потоки Корусанта) ──────────── */
@@ -413,5 +353,5 @@ img, svg {
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .speeder, .scan-beam, .skyline-beacon, .logo-mark { animation: none; }
+    .speeder, .scan-beam, .logo-mark { animation: none; }
 }
