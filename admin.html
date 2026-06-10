@@ -1,27 +1,32 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Управление Миссиями | CYBER STRIKE</title>
+  <title>Управление Миссиями | Rise of the Republic</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Firebase (compat SDK для ванильного JS без сборки) -->
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
   <style>
-    body { font-family: 'Space Grotesk', sans-serif; background:#030712; color:#f8fafc; }
-    .glass { background: rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:14px; }
-    .gradient { background: linear-gradient(90deg, #00f2ff, #7c3aed); }
+    body { font-family: 'Space Grotesk', sans-serif; background:#0A0A1A; color:#f8fafc; }
+    .font-orbitron { font-family: 'Orbitron', sans-serif; }
+    .glass { background: rgba(255,255,255,0.04); border:1px solid rgba(255,215,0,0.15); border-radius:14px; }
+    .gradient { background: linear-gradient(90deg, #FFD700, #FF8C00); }
+    .gold { color:#FFD700; }
   </style>
 </head>
 <body class="min-h-screen py-12">
   <!-- Security Overlay -->
-  <div id="security-overlay" class="fixed inset-0 z-50 bg-[#030712] flex items-center justify-center transition-opacity duration-500">
-    <div class="glass p-8 max-w-md w-full space-y-6 text-center shadow-2xl border border-cyan-500/20">
-        <div class="text-cyan-400 text-6xl mb-4 animate-pulse">🔒</div>
-        <h2 class="text-2xl font-bold uppercase tracking-widest text-cyan-400">Доступ запрещен</h2>
+  <div id="security-overlay" class="fixed inset-0 z-50 bg-[#0A0A1A] flex items-center justify-center transition-opacity duration-500">
+    <div class="glass p-8 max-w-md w-full space-y-6 text-center shadow-2xl border border-yellow-500/20">
+        <div class="gold text-6xl mb-4 animate-pulse">🔒</div>
+        <h2 class="text-2xl font-bold uppercase tracking-widest gold">Доступ запрещен</h2>
         <p class="text-slate-400 text-sm">В системе активен протокол динамической защиты. Введите код безопасности из консоли (F12).</p>
         <form id="security-form" class="space-y-4">
-            <input type="text" id="security-code" class="w-full bg-black/50 border border-cyan-500/30 rounded-md px-4 py-3 text-center text-xl tracking-[0.5em] text-cyan-400 focus:outline-none focus:border-cyan-400 transition placeholder:tracking-normal" placeholder="PASSWORD" autocomplete="off">
-            <button type="submit" class="w-full bg-cyan-500/10 border border-cyan-500/50 hover:bg-cyan-500 hover:text-black text-cyan-400 font-bold py-3 rounded-md transition uppercase tracking-wider">Разблокировать</button>
+            <input type="text" id="security-code" class="w-full bg-black/50 border border-yellow-500/30 rounded-md px-4 py-3 text-center text-xl tracking-[0.5em] gold focus:outline-none focus:border-yellow-400 transition placeholder:tracking-normal" placeholder="PASSWORD" autocomplete="off">
+            <button type="submit" class="w-full bg-yellow-500/10 border border-yellow-500/50 hover:bg-yellow-400 hover:text-black gold font-bold py-3 rounded-md transition uppercase tracking-wider">Разблокировать</button>
         </form>
     </div>
   </div>
@@ -29,16 +34,30 @@
   <main class="max-w-6xl mx-auto px-6 space-y-10">
     <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
       <div>
-        <p class="text-cyan-400 text-xs uppercase tracking-[0.35em]">Панель Управления</p>
+        <p class="gold text-xs uppercase tracking-[0.35em]">Панель Геймастера</p>
         <h1 class="text-3xl md:text-4xl font-bold">Администрирование Миссий</h1>
-        <p class="text-slate-400 text-sm mt-2">Создавайте, редактируйте или удаляйте миссии. Изменения сохраняются локально в браузере.</p>
+        <p class="text-slate-400 text-sm mt-2">Создавайте миссии и подтверждайте выполнение. Изменения синхронизируются для всех игроков через Firebase.</p>
       </div>
-      <div class="flex gap-3">
+      <div class="flex items-center gap-3 flex-wrap">
+        <span id="conn-state" class="font-orbitron text-[10px] tracking-[0.2em] px-3 py-2 border border-white/20 rounded-md text-slate-400">СВЯЗЬ...</span>
         <button id="reset-missions" class="px-4 py-2 text-sm font-semibold text-black gradient rounded-md shadow-lg">Сброс настроек</button>
-        <a href="sector1.html" class="px-4 py-2 text-sm font-semibold border border-white/20 rounded-md hover:border-cyan-400 transition">Назад на сайт</a>
+        <a href="quests.html" class="px-4 py-2 text-sm font-semibold border border-white/20 rounded-md hover:border-yellow-400 transition">Доска миссий</a>
       </div>
     </header>
 
+    <!-- Ожидают подтверждения GM -->
+    <section class="glass p-6 shadow-xl border-l-4 border-yellow-400/60">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl font-semibold flex items-center gap-2">
+          <span class="gold">⏳</span> Ожидают подтверждения
+          <span id="pending-count" class="font-orbitron text-xs bg-yellow-500/15 gold px-2 py-1 rounded">0</span>
+        </h2>
+        <p class="text-xs text-slate-400">Отчёты игроков о выполненных миссиях</p>
+      </div>
+      <div id="pending-list" class="space-y-3"></div>
+    </section>
+
+    <!-- Создание / редактирование -->
     <section class="glass p-6 shadow-xl">
       <form id="mission-form" class="space-y-4">
         <div class="grid md:grid-cols-2 gap-4">
@@ -56,12 +75,13 @@
           <input id="reward" name="reward" type="text" class="mt-1 w-full bg-black/40 border border-white/10 rounded-md px-3 py-2" placeholder="XP + Лут" required>
         </label>
         <div class="flex gap-3">
-          <button type="submit" class="px-4 py-2 bg-cyan-400 text-black font-semibold rounded-md">Сохранить Миссию</button>
+          <button type="submit" class="px-4 py-2 bg-yellow-400 text-black font-semibold rounded-md">Сохранить Миссию</button>
           <button type="button" id="cancel-edit" class="px-4 py-2 border border-white/20 rounded-md hidden">Отмена</button>
         </div>
       </form>
     </section>
 
+    <!-- Список миссий -->
     <section class="glass p-6 shadow-xl">
       <div class="flex items-center justify-between mb-4">
         <h2 class="text-xl font-semibold">Список Миссий</h2>
@@ -70,11 +90,11 @@
       <div id="mission-list" class="space-y-3"></div>
     </section>
 
-    <!-- System Logs Section -->
-    <section class="glass p-6 shadow-xl border-t-4 border-cyan-500/20">
+    <!-- Системные логи -->
+    <section class="glass p-6 shadow-xl border-t-4 border-yellow-500/20">
       <div class="flex items-center justify-between mb-4">
         <h2 class="text-xl font-semibold flex items-center gap-2">
-           <span class="text-cyan-400">📜</span> Системные Логи
+           <span class="gold">📜</span> Системные Логи
         </h2>
         <button id="clear-logs" class="text-xs text-red-400 hover:text-red-300 transition uppercase tracking-wider">Очистить логи</button>
       </div>
@@ -91,20 +111,19 @@
         const overlay = document.getElementById('security-overlay');
         const form = document.getElementById('security-form');
         const input = document.getElementById('security-code');
-        
+
         // Pool of 12 cryptic passwords
         const passPool = [
-            '#AX-99', '@ZY-21', '!KL-77', '$WQ-34', 
-            '%MN-55', '^OP-12', '&GH-88', '*EF-43', 
+            '#AX-99', '@ZY-21', '!KL-77', '$WQ-34',
+            '%MN-55', '^OP-12', '&GH-88', '*EF-43',
             '(IJ-66', ')UV-09', '{CD-22}', '}ST-11'
         ];
-        
-        // Select random password
+
         const code = passPool[Math.floor(Math.random() * passPool.length)];
-        
+
         console.clear();
-        console.log('%c 🛡️ SYSTEM SECURITY PROTOCOL 🛡️ ', 'background: #00f2ff; color: #000; font-size: 20px; padding: 10px; border-radius: 4px; font-weight: bold;');
-        console.log(`%c ACCESS PASSWORD: ${code}`, 'color: #00f2ff; font-size: 24px; font-weight: bold; margin-top: 10px; border: 2px dashed #00f2ff; padding: 5px 15px;');
+        console.log('%c 🛡️ SYSTEM SECURITY PROTOCOL 🛡️ ', 'background: #FFD700; color: #000; font-size: 20px; padding: 10px; border-radius: 4px; font-weight: bold;');
+        console.log(`%c ACCESS PASSWORD: ${code}`, 'color: #FFD700; font-size: 24px; font-weight: bold; margin-top: 10px; border: 2px dashed #FFD700; padding: 5px 15px;');
         console.log('%c Введите этот пароль для доступа к панели управления.', 'color: #94a3b8; margin-top: 5px; font-style: italic;');
 
         form.addEventListener('submit', (e) => {
@@ -112,24 +131,15 @@
             if (input.value === code) {
                 overlay.style.opacity = '0';
                 setTimeout(() => overlay.remove(), 500);
-                if (window.MissionService && window.MissionService.logAction) {
-                    window.MissionService.logAction('SYSTEM_ACCESS', 'Успешный вход в панель администратора');
-                    // Force re-render to show new log
-                    const logsEl = document.getElementById('system-logs');
-                    if (logsEl) {
-                        // We need to access renderLogs from here, but it's inside the other IIFE
-                        // Better to trigger a custom event or just let the user see it on next action/refresh
-                        // Or we can move renderLogs to global scope, but let's keep it simple.
-                        // Ideally we'd dispatch an event.
-                        window.dispatchEvent(new CustomEvent('admin:logged-in'));
-                    }
+                if (window.MissionService) {
+                    MissionService.logAction('SYSTEM_ACCESS', 'Успешный вход в панель администратора');
                 }
             } else {
                 input.value = '';
                 input.placeholder = 'ERROR';
                 input.classList.add('border-red-500', 'text-red-500');
-                if (window.MissionService && window.MissionService.logAction) {
-                     window.MissionService.logAction('ACCESS_DENIED', 'Неудачная попытка входа в систему');
+                if (window.MissionService) {
+                    MissionService.logAction('ACCESS_DENIED', 'Неудачная попытка входа в систему');
                 }
                 setTimeout(() => {
                     input.classList.remove('border-red-500', 'text-red-500');
@@ -139,17 +149,22 @@
         });
     })();
 
-
+    // Admin Panel Logic
     (function () {
       if (!window.MissionService) return;
+
       const form = document.getElementById('mission-form');
       const resetBtn = document.getElementById('reset-missions');
       const cancelBtn = document.getElementById('cancel-edit');
       const listEl = document.getElementById('mission-list');
+      const pendingEl = document.getElementById('pending-list');
+      const pendingCountEl = document.getElementById('pending-count');
       const logsEl = document.getElementById('system-logs');
       const clearLogsBtn = document.getElementById('clear-logs');
+      const connEl = document.getElementById('conn-state');
 
       let editingId = null;
+      let missions = [];
 
       const formFields = {
         title: document.getElementById('title'),
@@ -158,53 +173,104 @@
         reward: document.getElementById('reward')
       };
 
-      const renderLogs = () => {
-          if (!MissionService.getLogs) return;
-          const logs = MissionService.getLogs();
-          if (logs.length === 0) {
-              logsEl.innerHTML = '<p class="text-slate-600 italic text-center py-4">Нет записей в журнале</p>';
-              return;
-          }
-          logsEl.innerHTML = logs.map(log => {
-              const date = new Date(log.timestamp).toLocaleString('ru-RU');
-              const colorClass = log.action.includes('DELETE') ? 'text-red-400' : 
-                               (log.action.includes('CREATE') ? 'text-green-400' : 
-                               (log.action.includes('LOCK') ? 'text-amber-400' : 'text-cyan-400'));
-              return `
-                <div class="flex gap-3 border-b border-white/5 pb-2 last:border-0 hover:bg-white/5 p-2 rounded transition">
-                    <span class="text-slate-500 min-w-[140px]">${date}</span>
-                    <span class="${colorClass} font-bold min-w-[120px]">[${log.action}]</span>
-                    <span class="text-slate-300">${log.details}</span>
-                </div>
-              `;
-          }).join('');
+      const esc = (str) => String(str ?? '')
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
+      const statusText = (m) => ({
+        available: 'Доступно',
+        locked: 'Заблокировано',
+        pending: 'На проверке',
+        completed: 'Выполнено'
+      }[m.status] || m.status);
+
+      const statusColor = (m) => ({
+        available: 'text-emerald-400',
+        locked: 'text-red-400',
+        pending: 'text-yellow-400',
+        completed: 'text-slate-400'
+      }[m.status] || 'text-slate-400');
+
+      // ── Очередь на подтверждение ──
+      const renderPending = () => {
+        const pending = missions.filter((m) => m.status === 'pending');
+        pendingCountEl.textContent = pending.length;
+        if (!pending.length) {
+          pendingEl.innerHTML = '<p class="text-slate-600 italic text-center py-4">Нет миссий на проверке</p>';
+          return;
+        }
+        pendingEl.innerHTML = pending.map((m) => `
+          <div class="px-4 py-3 bg-black/30 border border-yellow-500/30 rounded-md space-y-2">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-2">
+              <div>
+                <h3 class="text-lg font-semibold">${esc(m.title)}</h3>
+                <p class="text-xs text-slate-400">
+                  Игрок: <span class="font-orbitron gold">${esc(m.lockedBy || '—')}</span>
+                  ${m.completedAt ? ` · отправлено ${new Date(m.completedAt).toLocaleString('ru-RU')}` : ''}
+                </p>
+              </div>
+              <div class="flex gap-2 shrink-0">
+                <button data-approve="${esc(m.id)}" class="px-3 py-2 text-sm border border-emerald-500/60 text-emerald-300 rounded-md hover:bg-emerald-500/10">Одобрить</button>
+                <button data-reject="${esc(m.id)}" class="px-3 py-2 text-sm border border-red-500/60 text-red-300 rounded-md hover:bg-red-500/10">Отклонить</button>
+              </div>
+            </div>
+            ${m.notes ? `<blockquote class="text-sm text-slate-300 border-l-2 border-yellow-500/40 pl-3 italic">${esc(m.notes)}</blockquote>` : '<p class="text-xs text-slate-600 italic">Отчёт не заполнен</p>'}
+          </div>
+        `).join('');
       };
 
-      const render = () => {
-        const missions = MissionService.getAll();
+      // ── Полный список миссий ──
+      const renderList = () => {
         listEl.innerHTML = '';
+        if (!missions.length) {
+          listEl.innerHTML = '<p class="text-slate-600 italic text-center py-4">Миссий нет</p>';
+          return;
+        }
         missions.forEach((mission) => {
-          const statusText = mission.status === 'locked' ? 'Заблокировано' : (mission.status === 'available' ? 'Доступно' : mission.status);
           const card = document.createElement('div');
           card.className = 'flex flex-col md:flex-row md:items-center justify-between gap-3 px-4 py-3 bg-black/30 border border-white/10 rounded-md';
           card.innerHTML = `
             <div>
-              <p class="text-xs uppercase tracking-[0.25em] text-cyan-400">${mission.difficulty}</p>
-              <h3 class="text-lg font-semibold">${mission.title}</h3>
-              <p class="text-sm text-slate-400">${mission.summary}</p>
-              <p class="text-xs text-slate-500 mt-1">Награда: ${mission.reward}</p>
-              <p class="text-xs mt-1 ${mission.status === 'locked' ? 'text-amber-400' : 'text-emerald-400'}">Статус: ${statusText}${mission.lockedBy ? ` (кем: ${mission.lockedBy})` : ''}</p>
+              <p class="text-xs uppercase tracking-[0.25em] gold">${esc(mission.difficulty)}</p>
+              <h3 class="text-lg font-semibold">${esc(mission.title)}</h3>
+              <p class="text-sm text-slate-400">${esc(mission.summary)}</p>
+              <p class="text-xs text-slate-500 mt-1">Награда: <span class="font-orbitron">${esc(mission.reward)}</span></p>
+              <p class="text-xs mt-1 ${statusColor(mission)}">Статус: ${statusText(mission)}${mission.lockedBy ? ` (кем: ${esc(mission.lockedBy)})` : ''}</p>
             </div>
-            <div class="flex gap-2">
-              <button data-edit="${mission.id}" class="px-3 py-2 text-sm border border-white/20 rounded-md hover:border-cyan-400">Изменить</button>
-              <button data-delete="${mission.id}" class="px-3 py-2 text-sm border border-red-500/50 text-red-300 rounded-md hover:bg-red-500/10">Удалить</button>
+            <div class="flex gap-2 flex-wrap">
+              ${mission.status !== 'available' ? `<button data-release="${esc(mission.id)}" class="px-3 py-2 text-sm border border-amber-500/50 text-amber-300 rounded-md hover:bg-amber-500/10">Освободить</button>` : ''}
+              <button data-edit="${esc(mission.id)}" class="px-3 py-2 text-sm border border-white/20 rounded-md hover:border-yellow-400">Изменить</button>
+              <button data-delete="${esc(mission.id)}" class="px-3 py-2 text-sm border border-red-500/50 text-red-300 rounded-md hover:bg-red-500/10">Удалить</button>
             </div>
           `;
           listEl.appendChild(card);
         });
-        renderLogs();
       };
 
+      const renderLogs = (logs) => {
+        if (!logs.length) {
+          logsEl.innerHTML = '<p class="text-slate-600 italic text-center py-4">Нет записей в журнале</p>';
+          return;
+        }
+        logsEl.innerHTML = logs.map((log) => {
+          const date = new Date(log.timestamp).toLocaleString('ru-RU');
+          const colorClass = log.action.includes('DELETE') || log.action.includes('REJECT') ? 'text-red-400' :
+                           (log.action.includes('CREATE') || log.action.includes('APPROVE') ? 'text-green-400' :
+                           (log.action.includes('LOCK') || log.action.includes('PENDING') ? 'text-amber-400' : 'gold'));
+          return `
+            <div class="flex gap-3 border-b border-white/5 pb-2 last:border-0 hover:bg-white/5 p-2 rounded transition">
+                <span class="text-slate-500 min-w-[140px]">${date}</span>
+                <span class="${colorClass} font-bold min-w-[140px]">[${esc(log.action)}]</span>
+                <span class="text-slate-300">${esc(log.details)}</span>
+            </div>
+          `;
+        }).join('');
+      };
+
+      const render = () => {
+        renderPending();
+        renderList();
+      };
 
       const clearForm = () => {
         editingId = null;
@@ -220,22 +286,29 @@
           difficulty: formFields.difficulty.value,
           reward: formFields.reward.value
         };
-        if (editingId) {
-          MissionService.updateMission(editingId, payload);
-        } else {
-          MissionService.addMission(payload);
-        }
-        clearForm();
-        render();
+        const op = editingId
+          ? MissionService.updateMission(editingId, payload)
+          : MissionService.addMission(payload);
+        op.then(() => clearForm());
       });
 
       cancelBtn.addEventListener('click', clearForm);
 
+      pendingEl.addEventListener('click', (event) => {
+        const approveId = event.target.getAttribute('data-approve');
+        const rejectId = event.target.getAttribute('data-reject');
+        if (approveId) MissionService.approveMission(approveId);
+        if (rejectId && confirm('Отклонить отчёт и вернуть миссию на доску?')) {
+          MissionService.rejectMission(rejectId);
+        }
+      });
+
       listEl.addEventListener('click', (event) => {
         const editId = event.target.getAttribute('data-edit');
         const deleteId = event.target.getAttribute('data-delete');
+        const releaseId = event.target.getAttribute('data-release');
         if (editId) {
-          const mission = MissionService.getAll().find((m) => m.id === editId);
+          const mission = missions.find((m) => m.id === editId);
           if (!mission) return;
           editingId = editId;
           formFields.title.value = mission.title;
@@ -245,12 +318,12 @@
           cancelBtn.classList.remove('hidden');
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }
-        if (deleteId) {
-          if (confirm('Удалить эту миссию?')) {
-            MissionService.removeMission(deleteId);
-            if (editingId === deleteId) clearForm();
-            render();
-          }
+        if (deleteId && confirm('Удалить эту миссию?')) {
+          MissionService.removeMission(deleteId);
+          if (editingId === deleteId) clearForm();
+        }
+        if (releaseId && confirm('Принудительно освободить миссию?')) {
+          MissionService.releaseMission(releaseId, null); // null = принудительно (админ)
         }
       });
 
@@ -258,20 +331,33 @@
         if (confirm('Сбросить миссии к начальным значениям?')) {
           MissionService.reset();
           clearForm();
-          render();
         }
       });
-      
+
       clearLogsBtn.addEventListener('click', () => {
-          if(confirm('Очистить историю событий?')) {
+          if (confirm('Очистить историю событий?')) {
               MissionService.clearLogs();
-              render();
           }
       });
-      
-      window.addEventListener('admin:logged-in', render);
 
-      render();
+      // ── Реалтайм-подписки: всё обновляется без перезагрузки ──
+      MissionService.subscribe((list) => {
+        missions = list;
+        render();
+      });
+
+      MissionService.subscribeLogs(renderLogs);
+
+      MissionService.onConnectionChange((conn) => {
+        const map = {
+          online: ['● LIVE', 'border-emerald-500/50 text-emerald-400'],
+          local: ['● LOCAL', 'border-amber-500/50 text-amber-400'],
+          offline: ['● OFFLINE', 'border-red-500/50 text-red-400']
+        };
+        const [label, classes] = map[conn] || ['СВЯЗЬ...', 'border-white/20 text-slate-400'];
+        connEl.textContent = label;
+        connEl.className = 'font-orbitron text-[10px] tracking-[0.2em] px-3 py-2 border rounded-md ' + classes;
+      });
     })();
   </script>
 </body>

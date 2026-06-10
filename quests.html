@@ -8,20 +8,22 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
     <script src="https://unpkg.com/lenis@1.1.18/dist/lenis.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Syncopate:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Firebase (compat SDK для ванильного JS без сборки) -->
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Syncopate:wght@400;700&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-dark: #020202;
-            --accent-primary: #00f2ff;
-            --accent-secondary: #7000ff;
+            --bg-dark: #0A0A1A;
+            --gold: #FFD700;
+            --amber: #FF8C00;
+            --green: #00ff88;
+            --red: #ff3860;
             --text-main: #ffffff;
+            --nav-h: 64px;
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: 'Space Grotesk', sans-serif;
@@ -29,180 +31,335 @@
             color: var(--text-main);
             overflow-x: hidden;
             line-height: 1.4;
-        }
-
-        /* Grid Background */
-        .grid-bg {
-            position: fixed;
-            inset: 0;
-            background-image: 
-                linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
-            background-size: 40px 40px;
-            z-index: -2;
-            pointer-events: none;
-        }
-
-        .hero-noise {
-            position: fixed;
-            inset: 0;
-            z-index: -1;
-            opacity: 0.03;
-            pointer-events: none;
-            background-image: url('https://grainy-gradients.vercel.app/noise.svg');
+            padding-top: var(--nav-h);
         }
 
         .font-syncopate { font-family: 'Syncopate', sans-serif; }
+        .font-orbitron { font-family: 'Orbitron', sans-serif; }
+
+        /* ── Звёздный фон ─────────────────────────────────── */
+        #starfield {
+            position: fixed;
+            inset: 0;
+            z-index: -2;
+            display: block;
+        }
+
+        /* ── Сканлайны (CRT/голограмма) ───────────────────── */
+        .scanlines {
+            position: fixed;
+            inset: 0;
+            z-index: 80;
+            pointer-events: none;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(255, 215, 0, 0.02) 0px,
+                rgba(255, 215, 0, 0.02) 1px,
+                transparent 1px,
+                transparent 3px
+            );
+        }
+
+        .scan-beam {
+            position: fixed;
+            left: 0;
+            right: 0;
+            top: -20%;
+            height: 90px;
+            z-index: 80;
+            pointer-events: none;
+            background: linear-gradient(180deg, transparent, rgba(255, 215, 0, 0.05), transparent);
+            animation: scanMove 10s linear infinite;
+        }
+
+        @keyframes scanMove {
+            from { top: -20%; }
+            to { top: 115%; }
+        }
 
         .gradient-text {
-            background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+            background: linear-gradient(90deg, var(--gold), var(--amber));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
 
-        .glow-text {
-            text-shadow: 0 0 20px rgba(0, 242, 255, 0.5), 0 0 40px rgba(112, 0, 255, 0.3);
+        /* ── Навигация ────────────────────────────────────── */
+        .site-nav {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%;
+            height: var(--nav-h);
+            z-index: 60;
+            display: flex;
+            align-items: center;
+            padding: 0 1.5rem;
+            border-bottom: 1px solid rgba(255, 215, 0, 0.15);
+            backdrop-filter: blur(18px);
+            background: rgba(10, 10, 26, 0.78);
         }
 
-        .glass-card {
-            background: rgba(255, 255, 255, 0.02);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            transition: all 0.6s cubic-bezier(0.19, 1, 0.22, 1);
+        .nav-inner {
+            max-width: 80rem;
+            margin: 0 auto;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
-        .glass-card:hover {
-            border-color: var(--accent-primary);
-            background: rgba(255, 255, 255, 0.04);
-            box-shadow: 0 20px 40px rgba(0, 242, 255, 0.15);
+        .logo {
+            font-family: 'Syncopate', sans-serif;
+            font-weight: 700;
+            font-size: 1rem;
+            color: var(--gold);
+            text-decoration: none;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            white-space: nowrap;
         }
 
-        .hud-line {
-            height: 1px;
-            background: linear-gradient(90deg, var(--accent-primary), transparent);
+        .logo-mark {
+            display: inline-block;
+            margin-right: 0.6rem;
+            font-size: 1.3rem;
+            text-shadow: 0 0 14px rgba(255, 215, 0, 0.7);
+            animation: logoSpin 14s linear infinite;
         }
 
-        /* Navigation */
+        @keyframes logoSpin { to { transform: rotate(360deg); } }
+
+        .nav-links { display: flex; gap: 2.2rem; }
+
         .nav-link {
-            color: rgba(255, 255, 255, 0.7);
+            position: relative;
+            color: rgba(255, 255, 255, 0.65);
+            text-decoration: none;
+            font-size: 0.9rem;
+            padding: 0.4rem 0;
             transition: color 0.3s ease;
         }
 
-        .nav-link:hover {
-            color: var(--accent-primary);
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            left: 0; right: 0; bottom: -3px;
+            height: 2px;
+            background: linear-gradient(90deg, var(--gold), var(--amber));
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.6);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.3s ease;
         }
 
-        .animated-gradient {
-            background: linear-gradient(90deg, #00f2ff, #7000ff, #ff00ff, #ffa500, #00f2ff);
-            background-size: 300% 100%;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            animation: gradientShift 8s ease infinite;
-            font-family: 'Syncopate', sans-serif;
-            font-weight: bold;
-            letter-spacing: -0.02em;
+        .nav-link:hover { color: var(--gold); }
+        .nav-link:hover::after, .nav-link.active::after { transform: scaleX(1); }
+        .nav-link.active { color: var(--gold); font-weight: 600; }
+
+        .menu-toggle {
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            gap: 5px;
+            width: 42px;
+            height: 42px;
+            padding: 0 10px;
+            background: none;
+            border: 1px solid rgba(255, 215, 0, 0.35);
+            border-radius: 2px;
+            cursor: pointer;
         }
 
-        @keyframes gradientShift {
-            0% { background-position: 0% center; }
-            50% { background-position: 100% center; }
-            100% { background-position: 0% center; }
+        .menu-toggle span {
+            width: 20px;
+            height: 2px;
+            background: var(--gold);
+            transition: transform 0.3s ease, opacity 0.3s ease;
         }
 
-        /* Hero Section */
-        .hero-section {
-            margin-top: 80px;
-            min-height: calc(100vh - 80px);
+        .menu-toggle.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+        .menu-toggle.open span:nth-child(2) { opacity: 0; }
+        .menu-toggle.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+        .mobile-menu {
+            position: fixed;
+            top: var(--nav-h);
+            left: 0; right: 0;
+            z-index: 55;
+            background: rgba(10, 10, 26, 0.97);
+            border-bottom: 1px solid rgba(255, 215, 0, 0.15);
+            backdrop-filter: blur(18px);
+            display: flex;
+            flex-direction: column;
+            padding: 0.5rem 1.5rem 1.25rem;
+            transform: translateY(-130%);
+            transition: transform 0.35s cubic-bezier(0.19, 1, 0.22, 1);
+        }
+
+        .mobile-menu.open { transform: translateY(0); }
+
+        .mobile-menu a {
+            color: rgba(255, 255, 255, 0.75);
+            text-decoration: none;
+            padding: 0.9rem 0.25rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 0.12em;
+        }
+
+        .mobile-menu a.active { color: var(--gold); }
+
+        @media (max-width: 767px) {
+            .nav-links { display: none; }
+            .menu-toggle { display: flex; }
+        }
+
+        /* ── Sticky-панель: поиск, фильтры, Game ID ───────── */
+        .toolbar {
+            position: sticky;
+            top: var(--nav-h);
+            z-index: 40;
+            background: rgba(10, 10, 26, 0.88);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(255, 215, 0, 0.12);
+            padding: 0.7rem 1.5rem;
+        }
+
+        .toolbar-inner {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.7rem;
+        }
+
+        .search-input {
+            flex: 1 1 200px;
+            min-width: 160px;
+            background: rgba(255, 215, 0, 0.05);
+            border: 1px solid rgba(255, 215, 0, 0.2);
+            border-radius: 2px;
+            padding: 0.65rem 0.9rem;
+            color: white;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--gold);
+            box-shadow: 0 0 12px rgba(255, 215, 0, 0.2);
+        }
+
+        .search-input::placeholder { color: rgba(255, 255, 255, 0.35); }
+
+        .filter-group { display: flex; gap: 0.4rem; }
+
+        .filter-btn {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            color: rgba(255, 255, 255, 0.6);
+            padding: 0.55rem 0.9rem;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            cursor: pointer;
+            border-radius: 2px;
+            transition: all 0.25s ease;
+            min-height: 42px;
+        }
+
+        .filter-btn:hover { border-color: rgba(255, 215, 0, 0.5); color: var(--gold); }
+
+        .filter-btn.active {
+            background: rgba(255, 215, 0, 0.12);
+            border-color: var(--gold);
+            color: var(--gold);
+            box-shadow: 0 0 12px rgba(255, 215, 0, 0.15);
+        }
+
+        .player-chip {
             display: flex;
             align-items: center;
-            justify-content: center;
-            padding: 4rem 2rem;
+            gap: 0.5rem;
+            border: 1px solid rgba(255, 215, 0, 0.2);
+            background: rgba(255, 215, 0, 0.04);
+            padding: 0.5rem 0.8rem;
+            border-radius: 2px;
+            font-size: 0.78rem;
+            white-space: nowrap;
+        }
+
+        .player-chip .chip-label { color: rgba(255, 255, 255, 0.45); text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.65rem; }
+        .player-chip #player-id-display { color: var(--gold); font-size: 0.8rem; letter-spacing: 0.05em; }
+
+        .player-chip button {
+            background: none;
+            border: none;
+            color: var(--amber);
+            font-size: 0.7rem;
+            text-transform: lowercase;
+            cursor: pointer;
+            text-decoration: underline;
+            text-underline-offset: 3px;
+            padding: 0.2rem;
+        }
+
+        .player-chip button:hover { color: var(--gold); }
+
+        /* ── Заголовок страницы ───────────────────────────── */
+        .page-header {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 3.5rem 2rem 2.5rem;
             position: relative;
             z-index: 10;
         }
 
-        .hero-content {
-            max-width: 1200px;
-            width: 100%;
+        .page-header .eyebrow {
+            display: block;
+            color: var(--gold);
+            font-weight: 700;
+            letter-spacing: 0.4em;
+            text-transform: uppercase;
+            font-size: 0.6rem;
+            margin-bottom: 1rem;
         }
 
-        .hero-content h1 {
+        .page-header h1 {
             font-family: 'Syncopate', sans-serif;
-            font-size: clamp(2.5rem, 8vw, 5rem);
+            font-size: clamp(2.4rem, 9vw, 6rem);
             font-weight: 700;
-            margin-bottom: 1.5rem;
-            color: white;
+            line-height: 0.9;
             letter-spacing: -0.02em;
             text-transform: uppercase;
-            line-height: 0.9;
+            margin-bottom: 1.2rem;
         }
 
-        .hero-content p {
-            font-size: 0.95rem;
-            color: rgba(255, 255, 255, 0.6);
-            margin-bottom: 2rem;
-            max-width: 600px;
-            line-height: 1.6;
-            letter-spacing: 0.05em;
-        }
-
-        .instructions {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 3rem;
-            max-width: 1000px;
-        }
-
-        .instruction-card {
-            glass-card;
-            padding: 1.5rem;
-            border: 1px solid rgba(0, 242, 255, 0.1);
-            background: rgba(255, 255, 255, 0.02);
-            backdrop-filter: blur(20px);
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .instruction-card::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(135deg, rgba(0, 242, 255, 0.1), transparent);
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-
-        .instruction-card:hover {
-            border-color: rgba(0, 242, 255, 0.3);
-            background: rgba(255, 255, 255, 0.04);
-        }
-
-        .instruction-card:hover::before {
-            opacity: 1;
-        }
-
-        .instruction-card strong {
-            color: var(--accent-primary);
-            display: block;
-            margin-bottom: 0.5rem;
-            font-size: 0.75rem;
-            font-weight: 700;
-            letter-spacing: 0.2em;
-            text-transform: uppercase;
-        }
-
-        .instruction-card span {
+        .counter-line {
             font-size: 0.85rem;
-            color: rgba(255, 255, 255, 0.5);
+            color: var(--gold);
+            letter-spacing: 0.12em;
+            margin-bottom: 1rem;
+            text-shadow: 0 0 16px rgba(255, 215, 0, 0.4);
         }
 
-        /* Mission List */
+        .page-header p {
+            font-size: 0.95rem;
+            color: rgba(255, 255, 255, 0.55);
+            max-width: 560px;
+            line-height: 1.6;
+        }
+
+        /* ── Карточки миссий ──────────────────────────────── */
         .mission-section {
-            padding: 0 2rem 4rem 2rem;
+            padding: 0 2rem 4rem;
             max-width: 1400px;
             margin: 0 auto;
             position: relative;
@@ -211,91 +368,121 @@
 
         #mission-list {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-            gap: 2rem;
-            max-width: 1400px;
-            margin: 0 auto;
-            padding-bottom: 4rem;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1.8rem;
+            padding-bottom: 3rem;
+        }
+
+        /* мерцающий "голографический" бордер */
+        @keyframes holoFlicker {
+            0%, 100% { border-color: rgba(255, 215, 0, 0.16); }
+            46% { border-color: rgba(255, 215, 0, 0.28); }
+            48% { border-color: rgba(255, 215, 0, 0.1); }
+            50% { border-color: rgba(255, 215, 0, 0.3); }
+            54% { border-color: rgba(255, 215, 0, 0.2); }
         }
 
         .mission-card {
-            glass-card;
-            padding: 2rem;
-            border: 1px solid rgba(0, 242, 255, 0.1);
-            background: rgba(255, 255, 255, 0.02);
-            backdrop-filter: blur(20px);
+            background: rgba(14, 14, 32, 0.72);
+            border: 1px solid rgba(255, 215, 0, 0.16);
+            padding: 1.8rem;
             position: relative;
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
             overflow: hidden;
-            transition: all 0.3s cubic-bezier(0.19, 1, 0.22, 1);
+            border-radius: 3px;
+            transition: transform 0.4s cubic-bezier(0.2, 1, 0.3, 1), box-shadow 0.4s ease, background 0.4s ease;
+            animation: holoFlicker 4s infinite;
         }
 
         .mission-card::before {
             content: '';
             position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 1px;
-            background: linear-gradient(90deg, var(--accent-primary), transparent);
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-
-        .mission-card:hover::before {
-            opacity: 1;
+            top: 0; left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, var(--gold), var(--amber));
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.4s cubic-bezier(0.2, 1, 0.3, 1);
         }
 
         .mission-card:hover {
-            border-color: rgba(0, 242, 255, 0.3);
-            background: rgba(255, 255, 255, 0.04);
-            box-shadow: 0 20px 40px rgba(0, 242, 255, 0.1);
-            transform: translateY(-5px);
+            transform: translateY(-6px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), 0 0 25px rgba(255, 215, 0, 0.08);
+            background: rgba(18, 18, 40, 0.85);
         }
+
+        .mission-card:hover::before { transform: scaleX(1); }
+
+        .mission-card.is-completed { opacity: 0.55; }
+
+        /* подсветка обновлённой карточки */
+        @keyframes cardFlash {
+            0% { box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.75), 0 0 40px rgba(255, 215, 0, 0.3); }
+            100% { box-shadow: 0 0 0 0 transparent; }
+        }
+
+        .card-updated { animation: holoFlicker 4s infinite, cardFlash 1.4s ease-out; }
 
         .mission-header {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin-bottom: 1.5rem;
+            gap: 0.8rem;
+            margin-bottom: 1.3rem;
         }
 
         .difficulty-badge {
-            background: rgba(0, 242, 255, 0.1);
-            color: var(--accent-primary);
+            background: rgba(255, 215, 0, 0.08);
+            color: var(--gold);
             padding: 0.4rem 0.8rem;
             border-radius: 2px;
-            font-size: 0.65rem;
+            font-size: 0.62rem;
             font-weight: 700;
-            letter-spacing: 0.2em;
+            letter-spacing: 0.18em;
             text-transform: uppercase;
-            border: 1px solid rgba(0, 242, 255, 0.2);
+            border: 1px solid rgba(255, 215, 0, 0.25);
         }
 
         .status-badge {
-            padding: 0.4rem 0.8rem;
-            border-radius: 2px;
-            font-size: 0.65rem;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            font-size: 0.66rem;
             font-weight: 700;
-            letter-spacing: 0.2em;
             text-transform: uppercase;
-            border: 1px solid;
+            letter-spacing: 0.1em;
+            text-align: right;
         }
 
-        .status-available {
-            background: rgba(0, 200, 100, 0.1);
-            color: #00ff00;
-            border-color: rgba(0, 200, 100, 0.3);
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            flex-shrink: 0;
         }
 
-        .status-locked {
-            background: rgba(112, 0, 255, 0.1);
-            color: #7000ff;
-            border-color: rgba(112, 0, 255, 0.3);
-        }
+        .status-available { color: var(--green); }
+        .status-available .status-dot { background: var(--green); box-shadow: 0 0 10px var(--green); }
+
+        .status-locked { color: var(--red); }
+        .status-locked .status-dot { background: var(--red); box-shadow: 0 0 10px var(--red); }
+
+        .status-expired { color: var(--amber); }
+        .status-expired .status-dot { background: var(--amber); box-shadow: 0 0 10px var(--amber); }
+
+        .status-pending { color: var(--gold); }
+        .status-pending .status-dot { background: var(--gold); box-shadow: 0 0 10px var(--gold); }
+
+        .status-completed { color: rgba(255, 255, 255, 0.45); }
+        .status-completed .status-dot { background: rgba(255, 255, 255, 0.45); }
 
         .mission-title {
             font-family: 'Syncopate', sans-serif;
-            font-size: 1.3rem;
+            font-size: 1.15rem;
             font-weight: 700;
             color: white;
             margin-bottom: 0.8rem;
@@ -307,37 +494,51 @@
             color: rgba(255, 255, 255, 0.6);
             font-size: 0.9rem;
             line-height: 1.5;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1.4rem;
+            flex-grow: 1;
         }
 
         .mission-footer {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-top: 1px solid rgba(0, 242, 255, 0.1);
+            border-top: 1px solid rgba(255, 215, 0, 0.12);
             padding-top: 1rem;
-            margin-bottom: 1rem;
+            margin-bottom: 0.9rem;
         }
 
-        .mission-reward {
-            font-size: 0.85rem;
-            color: var(--accent-primary);
+        .mission-reward { display: flex; flex-direction: column; gap: 4px; }
+
+        .reward-label {
+            font-size: 0.62rem;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .reward-value {
+            font-family: 'Orbitron', sans-serif;
+            color: var(--gold);
             font-weight: 700;
-            letter-spacing: 0.1em;
+            font-size: 0.85rem;
+            letter-spacing: 0.03em;
         }
 
-        .mission-time {
-            font-size: 0.75rem;
-            color: rgba(255, 255, 255, 0.3);
+        .lock-timer {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.68rem;
+            color: rgba(255, 255, 255, 0.5);
+            letter-spacing: 0.08em;
+            text-align: right;
         }
 
-        .mission-action {
-            display: flex;
-            gap: 0.8rem;
-        }
+        .lock-timer.expired { color: var(--amber); }
+
+        .mission-action { display: flex; gap: 0.7rem; }
 
         .btn {
             padding: 0.7rem 1.2rem;
+            min-height: 48px;
             border: 1px solid;
             font-size: 0.75rem;
             font-weight: 700;
@@ -347,159 +548,180 @@
             transition: all 0.3s ease;
             flex: 1;
             text-align: center;
-            text-decoration: none;
             background: transparent;
             border-radius: 2px;
+            font-family: 'Space Grotesk', sans-serif;
         }
 
         .btn-primary {
-            color: var(--accent-primary);
-            border-color: var(--accent-primary);
-            background: rgba(0, 242, 255, 0.05);
+            color: var(--gold);
+            border-color: var(--gold);
+            background: rgba(255, 215, 0, 0.06);
         }
 
         .btn-primary:hover {
-            background: rgba(0, 242, 255, 0.15);
-            box-shadow: 0 0 15px rgba(0, 242, 255, 0.3);
+            background: rgba(255, 215, 0, 0.16);
+            box-shadow: 0 0 16px rgba(255, 215, 0, 0.3);
             transform: translateY(-2px);
         }
 
         .btn-success {
-            color: #00ff00;
-            border-color: #00ff00;
-            background: rgba(0, 200, 100, 0.05);
+            color: var(--green);
+            border-color: var(--green);
+            background: rgba(0, 255, 136, 0.05);
         }
 
         .btn-success:hover {
-            background: rgba(0, 200, 100, 0.15);
-            box-shadow: 0 0 15px rgba(0, 200, 100, 0.3);
+            background: rgba(0, 255, 136, 0.14);
+            box-shadow: 0 0 16px rgba(0, 255, 136, 0.3);
             transform: translateY(-2px);
         }
 
+        .btn-ghost {
+            color: rgba(255, 255, 255, 0.5);
+            border-color: rgba(255, 255, 255, 0.2);
+            flex: 0 0 auto;
+        }
+
+        .btn-ghost:hover { color: white; border-color: rgba(255, 255, 255, 0.5); }
+
         .btn-disabled {
             color: rgba(255, 255, 255, 0.3);
-            border-color: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.15);
             cursor: not-allowed;
         }
 
-        /* Modal */
+        .btn-pending {
+            color: var(--gold);
+            border-color: rgba(255, 215, 0, 0.4);
+            cursor: default;
+        }
+
+        .empty-state {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 3rem 1rem;
+            color: rgba(255, 255, 255, 0.4);
+            border: 1px dashed rgba(255, 215, 0, 0.2);
+            border-radius: 3px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+        }
+
+        /* ── Модальные окна ───────────────────────────────── */
         .mission-modal {
             position: fixed;
             inset: 0;
             display: none;
             align-items: center;
             justify-content: center;
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(5, 5, 15, 0.85);
             backdrop-filter: blur(10px);
             z-index: 1000;
             padding: 1.5rem;
         }
 
-        .mission-modal.active {
-            display: flex;
-        }
+        .mission-modal.active { display: flex; }
 
         .modal-content {
-            glass-card;
-            background: rgba(2, 2, 2, 0.9);
-            border: 1px solid rgba(0, 242, 255, 0.2);
+            background: rgba(12, 12, 30, 0.95);
+            border: 1px solid rgba(255, 215, 0, 0.3);
             backdrop-filter: blur(20px);
-            padding: 2.5rem;
-            max-width: 500px;
+            padding: 2.2rem;
+            max-width: 480px;
             width: 100%;
             position: relative;
+            border-radius: 3px;
+            animation: holoFlicker 4s infinite;
         }
 
         .modal-close {
             position: absolute;
-            top: 1.5rem;
-            right: 1.5rem;
+            top: 1.2rem;
+            right: 1.2rem;
             background: none;
-            border: 1px solid rgba(0, 242, 255, 0.2);
-            font-size: 1.5rem;
-            color: var(--accent-primary);
+            border: 1px solid rgba(255, 215, 0, 0.25);
+            font-size: 1.4rem;
+            color: var(--gold);
             cursor: pointer;
             transition: all 0.3s ease;
-            width: 40px;
-            height: 40px;
+            width: 42px;
+            height: 42px;
             display: flex;
             align-items: center;
             justify-content: center;
+            border-radius: 2px;
         }
 
         .modal-close:hover {
-            border-color: var(--accent-primary);
-            box-shadow: 0 0 15px rgba(0, 242, 255, 0.3);
+            border-color: var(--gold);
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
             transform: rotate(90deg);
         }
 
         .modal-title {
             font-family: 'Syncopate', sans-serif;
-            font-size: 1.8rem;
+            font-size: 1.4rem;
             font-weight: 700;
             color: white;
             margin-bottom: 1rem;
             text-transform: uppercase;
             letter-spacing: -0.02em;
+            padding-right: 3rem;
         }
 
         .modal-description {
             color: rgba(255, 255, 255, 0.6);
-            margin-bottom: 1.5rem;
+            margin-bottom: 1.4rem;
             line-height: 1.6;
             font-size: 0.9rem;
         }
 
-        .modal-form {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
+        .modal-form { display: flex; flex-direction: column; gap: 1rem; }
 
-        .form-group {
-            display: flex;
-            flex-direction: column;
-        }
+        .form-group { display: flex; flex-direction: column; }
 
         .form-group label {
-            color: var(--accent-primary);
+            color: var(--gold);
             margin-bottom: 0.5rem;
             font-weight: 700;
-            font-size: 0.8rem;
-            letter-spacing: 0.1em;
+            font-size: 0.75rem;
+            letter-spacing: 0.12em;
             text-transform: uppercase;
         }
 
-        .form-group input {
-            background: rgba(0, 242, 255, 0.05);
-            border: 1px solid rgba(0, 242, 255, 0.2);
+        .form-group input,
+        .form-group textarea {
+            background: rgba(255, 215, 0, 0.05);
+            border: 1px solid rgba(255, 215, 0, 0.25);
             border-radius: 2px;
             padding: 0.8rem;
             color: white;
             font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.95rem;
             transition: all 0.3s ease;
+            resize: vertical;
         }
 
-        .form-group input:focus {
+        .form-group input:focus,
+        .form-group textarea:focus {
             outline: none;
-            border-color: var(--accent-primary);
-            background: rgba(0, 242, 255, 0.1);
-            box-shadow: 0 0 10px rgba(0, 242, 255, 0.2);
+            border-color: var(--gold);
+            background: rgba(255, 215, 0, 0.08);
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
         }
 
-        .modal-buttons {
-            display: flex;
-            gap: 1rem;
-            margin-top: 1.5rem;
-        }
+        .modal-buttons { display: flex; gap: 1rem; margin-top: 0.5rem; }
 
         .modal-buttons button {
             flex: 1;
             padding: 0.8rem;
+            min-height: 48px;
             border: 1px solid;
             font-weight: 700;
             text-transform: uppercase;
-            font-size: 0.75rem;
+            font-size: 0.72rem;
             letter-spacing: 0.1em;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -508,14 +730,14 @@
         }
 
         .modal-buttons .btn-primary {
-            color: var(--accent-primary);
-            border-color: var(--accent-primary);
-            background: rgba(0, 242, 255, 0.05);
+            color: var(--gold);
+            border-color: var(--gold);
+            background: rgba(255, 215, 0, 0.06);
         }
 
         .modal-buttons .btn-primary:hover {
-            background: rgba(0, 242, 255, 0.15);
-            box-shadow: 0 0 15px rgba(0, 242, 255, 0.3);
+            background: rgba(255, 215, 0, 0.16);
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
         }
 
         .modal-buttons .btn-secondary {
@@ -529,319 +751,603 @@
             background: rgba(255, 255, 255, 0.05);
         }
 
-        /* Footer */
+        /* ── LIVE-индикатор соединения ────────────────────── */
+        #live-indicator {
+            position: fixed;
+            bottom: 1rem;
+            right: 1rem;
+            z-index: 900;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            padding: 7px 12px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 2px;
+            background: rgba(10, 10, 26, 0.85);
+            backdrop-filter: blur(10px);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.6rem;
+            font-weight: 700;
+            letter-spacing: 0.2em;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        @keyframes livePulse {
+            0% { box-shadow: 0 0 0 0 rgba(0, 255, 136, 0.55); }
+            70% { box-shadow: 0 0 0 8px rgba(0, 255, 136, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 255, 136, 0); }
+        }
+
+        #live-indicator.online { border-color: rgba(0, 255, 136, 0.4); color: var(--green); }
+        #live-indicator.online .live-dot { background: var(--green); animation: livePulse 1.6s infinite; }
+
+        #live-indicator.local { border-color: rgba(255, 140, 0, 0.4); color: var(--amber); }
+        #live-indicator.local .live-dot { background: var(--amber); }
+
+        #live-indicator.offline { border-color: rgba(255, 56, 96, 0.4); color: var(--red); }
+        #live-indicator.offline .live-dot { background: var(--red); }
+
+        /* ── Toast-уведомления ────────────────────────────── */
+        #toast-container {
+            position: fixed;
+            bottom: 1.2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1100;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            width: min(420px, calc(100vw - 2rem));
+            pointer-events: none;
+        }
+
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateY(16px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes toastOut {
+            from { opacity: 1; }
+            to { opacity: 0; transform: translateY(10px); }
+        }
+
+        .toast {
+            background: rgba(12, 12, 30, 0.95);
+            border: 1px solid rgba(255, 215, 0, 0.25);
+            border-left-width: 3px;
+            padding: 0.85rem 1.1rem;
+            font-size: 0.85rem;
+            letter-spacing: 0.03em;
+            color: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border-radius: 2px;
+            animation: toastIn 0.3s ease;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+        }
+
+        .toast.hide { animation: toastOut 0.3s ease forwards; }
+        .toast.success { border-left-color: var(--green); }
+        .toast.error { border-left-color: var(--red); }
+        .toast.info { border-left-color: var(--gold); }
+
+        /* ── Футер ────────────────────────────────────────── */
         footer {
             text-align: center;
             padding: 2rem;
-            color: rgba(0, 242, 255, 0.4);
-            border-top: 1px solid rgba(0, 242, 255, 0.1);
+            color: rgba(255, 215, 0, 0.4);
+            border-top: 1px solid rgba(255, 215, 0, 0.12);
             position: relative;
             z-index: 10;
             font-size: 0.8rem;
             letter-spacing: 0.1em;
         }
 
-        footer p {
-            margin: 0;
-        }
-        .mission-card {
-            background: rgba(10, 10, 10, 0.6);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            padding: 2.5rem;
-            position: relative;
-            backdrop-filter: blur(10px);
-            transition: transform 0.4s cubic-bezier(0.2, 1, 0.3, 1), border-color 0.4s ease;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
+        /* ── Мобильная оптимизация ────────────────────────── */
+        @media (max-width: 640px) {
+            #mission-list { grid-template-columns: 1fr; gap: 1.2rem; }
+            .mission-card { padding: 1.4rem; }
+            .page-header { padding: 2.5rem 1.25rem 1.75rem; }
+            .mission-section { padding: 0 1.25rem 3rem; }
+            .toolbar { padding: 0.6rem 1.25rem; }
+            .player-chip { flex: 1 1 100%; justify-content: space-between; }
         }
 
-        .mission-card:hover {
-            transform: translateY(-8px);
-            border-color: rgba(0, 242, 255, 0.3);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-            background: rgba(10, 10, 10, 0.8);
-        }
-
-        .mission-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 2px;
-            background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
-            transform: scaleX(0);
-            transform-origin: left;
-            transition: transform 0.4s cubic-bezier(0.2, 1, 0.3, 1);
-        }
-
-        .mission-card:hover::before {
-            transform: scaleX(1);
-        }
-
-        .status-badge {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 0.7rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            background: transparent !important;
-            border: none !important;
-            padding: 0 !important;
-        }
-
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            display: inline-block;
-        }
-        
-        .status-available .status-dot { background: #00ff66; box-shadow: 0 0 10px #00ff66; }
-        .status-locked .status-dot { background: #ff0055; box-shadow: 0 0 10px #ff0055; }
-        
-        .status-text { color: inherit; }
-        .status-available { color: #00ff66 !important; }
-        .status-locked { color: #ff0055 !important; }
-
-        .mission-reward {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .reward-label {
-            font-size: 0.65rem;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            color: rgba(255, 255, 255, 0.4);
-        }
-
-        .reward-value {
-            color: white;
-            font-weight: 700;
-            font-size: 0.95rem;
+        /* на touch-устройствах убираем hover-подъёмы */
+        @media (hover: none) {
+            .mission-card:hover { transform: none; }
+            .btn-primary:hover, .btn-success:hover { transform: none; }
         }
     </style>
 </head>
 <body>
-    <!-- Grid Background -->
-    <div class="grid-bg"></div>
-    <div class="hero-noise"></div>
+    <!-- Звёздный фон -->
+    <canvas id="starfield"></canvas>
+    <!-- Сканлайн-эффект -->
+    <div class="scanlines"></div>
+    <div class="scan-beam"></div>
 
-    <!-- Navigation -->
-    <nav class="fixed top-0 left-0 w-full z-50 px-8 py-6 border-b border-white/10 backdrop-blur-xl bg-black/50">
-        <div class="max-w-7xl mx-auto flex justify-between items-center">
-            <a href="index.html" class="animated-gradient text-xl">Городской Ивент</a>
-            <div class="hidden md:flex items-center gap-12">
+    <!-- Навигация -->
+    <nav class="site-nav">
+        <div class="nav-inner">
+            <a href="index.html" class="logo"><span class="logo-mark">✦</span>Городской Ивент</a>
+            <div class="nav-links">
                 <a href="index.html" class="nav-link">Главная</a>
-                <a href="quests.html" class="nav-link text-cyan-400">Миссии</a>
+                <a href="quests.html" class="nav-link active">Миссии</a>
                 <a href="sector1.html" class="nav-link">Карта</a>
                 <a href="sector2.html" class="nav-link">Гайды</a>
                 <a href="sector3.html" class="nav-link">Фракции</a>
                 <a href="sector4.html" class="nav-link">FAQ</a>
             </div>
+            <button id="menu-toggle" class="menu-toggle" aria-label="Меню">
+                <span></span><span></span><span></span>
+            </button>
         </div>
     </nav>
 
-    <!-- Hero Section -->
-    <header class="relative min-h-screen flex items-center justify-center px-8 overflow-hidden pt-24">
-        <div class="absolute inset-0 z-0">
-            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80vw] h-[80vw] border border-cyan-400/[0.03] rounded-full"></div>
-            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60vw] h-[60vw] border border-white/[0.02] rounded-full"></div>
-            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[40vw] h-[40vw] border border-cyan-400/[0.05] rounded-full"></div>
-        </div>
+    <!-- Мобильное меню -->
+    <div id="mobile-menu" class="mobile-menu">
+        <a href="index.html">Главная</a>
+        <a href="quests.html" class="active">Миссии</a>
+        <a href="sector1.html">Карта</a>
+        <a href="sector2.html">Гайды</a>
+        <a href="sector3.html">Фракции</a>
+        <a href="sector4.html">FAQ</a>
+    </div>
 
-        <div class="max-w-7xl mx-auto w-full relative z-10">
-            <div class="grid grid-cols-12 gap-8">
-                <div class="col-span-12 lg:col-span-4 hero-reveal">
-                    <div class="space-y-12">
-                        <div>
-                            <span class="text-cyan-400 font-bold tracking-[0.4em] uppercase text-[9px] mb-4 block">// Система Заданий</span>
-                            <p class="text-lg text-neutral-400 leading-relaxed opacity-80">
-                                Введи  ID и начни выполнять задания из списка доступных. 
-                            </p>
-                        </div>
-           
-                        </a>
-                    </div>
-                </div>
-
-                <div class="col-span-12 lg:col-span-8 text-center lg:text-right hero-reveal">
-                    <div class="relative inline-block">
-                        <h1 class="font-syncopate text-[clamp(4rem,16vw,12rem)] font-bold leading-[0.75] tracking-tighter mb-4">
-                            ДОСКА<br>
-                            <span class="gradient-text">МИССИЙ</span>
-                        </h1>
-                    </div>
-                </div>
+    <!-- Sticky-панель: поиск + фильтры + Game ID -->
+    <div class="toolbar">
+        <div class="toolbar-inner">
+            <input id="mission-search" class="search-input" type="search" placeholder="Поиск миссий по названию...">
+            <div class="filter-group">
+                <button class="filter-btn active" data-filter="all">Все</button>
+                <button class="filter-btn" data-filter="available">Доступные</button>
+                <button class="filter-btn" data-filter="locked">Занятые</button>
+            </div>
+            <div class="player-chip">
+                <span class="chip-label">Ваш ID:</span>
+                <span id="player-id-display" class="font-orbitron">не задан</span>
+                <button id="change-id-btn" type="button">сменить</button>
             </div>
         </div>
+    </div>
+
+    <!-- Заголовок -->
+    <header class="page-header hero-reveal">
+        <span class="eyebrow">// Система заданий · Rise of the Republic</span>
+        <h1>ДОСКА <span class="gradient-text">МИССИЙ</span></h1>
+        <div id="mission-counter" class="counter-line font-orbitron">— доступно · — занято · — всего</div>
+        <p>Введи свой Game ID и бери задания. Доска общая для всего сервера — статусы миссий обновляются у всех игроков в реальном времени.</p>
     </header>
 
-    <!-- Mission List Section -->
+    <!-- Список миссий -->
     <section class="mission-section">
         <div id="mission-list"></div>
     </section>
 
-    <!-- Modal -->
-    <div id="mission-modal" class="mission-modal">
+    <!-- Модал: Game ID -->
+    <div id="id-modal" class="mission-modal">
         <div class="modal-content">
-            <button id="mission-modal-close" class="modal-close">×</button>
-            <h2 id="mission-modal-title" class="modal-title">Миссия</h2>
-            <p class="modal-description">Введи свой Game ID чтобы заблокировать эту миссию на себя.</p>
-            <form id="mission-form" class="modal-form">
+            <button id="id-modal-close" class="modal-close">×</button>
+            <h2 id="id-modal-title" class="modal-title">Game ID</h2>
+            <p class="modal-description">Введи свой Game ID — под ним ты будешь занимать миссии. Он сохранится в браузере.</p>
+            <form id="id-form" class="modal-form">
                 <div class="form-group">
                     <label for="player-id-input">Game ID</label>
-                    <input id="player-id-input" type="text" placeholder="PLAYER-123" required>
+                    <input id="player-id-input" type="text" placeholder="PLAYER-123" required autocomplete="off">
                 </div>
                 <div class="modal-buttons">
-                    <button type="submit" class="btn-primary">Заблокировать</button>
-                    <button type="button" id="mission-modal-cancel" class="btn-secondary">Отмена</button>
+                    <button type="submit" class="btn-primary">Сохранить</button>
+                    <button type="button" id="id-modal-cancel" class="btn-secondary">Отмена</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Footer -->
+    <!-- Модал: отчёт о выполнении -->
+    <div id="complete-modal" class="mission-modal">
+        <div class="modal-content">
+            <button id="complete-modal-close" class="modal-close">×</button>
+            <h2 id="complete-modal-title" class="modal-title">Отчёт о миссии</h2>
+            <p class="modal-description">Опиши что сделал (необязательно). Миссия уйдёт на проверку геймастеру.</p>
+            <form id="complete-form" class="modal-form">
+                <div class="form-group">
+                    <label for="mission-notes">Отчёт</label>
+                    <textarea id="mission-notes" rows="4" placeholder="Например: ретранслятор захвачен, охрана нейтрализована"></textarea>
+                </div>
+                <div class="modal-buttons">
+                    <button type="submit" class="btn-primary">Отправить на проверку</button>
+                    <button type="button" id="complete-modal-cancel" class="btn-secondary">Отмена</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- LIVE-индикатор -->
+    <div id="live-indicator">
+        <span class="live-dot"></span>
+        <span id="live-label">СВЯЗЬ...</span>
+    </div>
+
+    <!-- Toast-уведомления -->
+    <div id="toast-container"></div>
+
+    <!-- Футер -->
     <footer>
-        <p>© 2026 Система Миссий | Выполняй задания и получай награды</p>
+        <p>© 2026 Система Миссий | Rise of the Republic — да пребудет с тобой Сила</p>
     </footer>
 
     <script src="mission.js"></script>
     <script>
-        // Mission System
+        // ─────────────────────── Звёздный фон ───────────────────────
         (function () {
-            const missionContainer = document.getElementById('mission-list');
-            const modal = document.getElementById('mission-modal');
-            if (!missionContainer || !modal || !window.MissionService) return;
+            const canvas = document.getElementById('starfield');
+            const ctx = canvas.getContext('2d');
+            let stars = [];
 
-            const modalTitle = document.getElementById('mission-modal-title');
-            const form = document.getElementById('mission-form');
-            const playerInput = document.getElementById('player-id-input');
-            const closeBtn = document.getElementById('mission-modal-close');
-            const cancelBtn = document.getElementById('mission-modal-cancel');
-            const LAST_PLAYER_KEY = 'cs_last_player_id';
-            let selectedMissionId = null;
-
-            const getLastPlayerId = () => localStorage.getItem(LAST_PLAYER_KEY) || '';
-            const setLastPlayerId = (val) => localStorage.setItem(LAST_PLAYER_KEY, val);
-
-            const closeModal = () => {
-                modal.classList.remove('active');
-                form.reset();
-                selectedMissionId = null;
+            const resize = () => {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                const count = Math.min(220, Math.floor(canvas.width * canvas.height / 7000));
+                stars = Array.from({ length: count }, () => ({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    r: Math.random() * 1.3 + 0.3,
+                    base: 0.25 + Math.random() * 0.65,
+                    speed: 0.4 + Math.random() * 1.4,
+                    phase: Math.random() * Math.PI * 2
+                }));
             };
 
-            const openModal = (mission) => {
-                selectedMissionId = mission.id;
-                modalTitle.textContent = mission.title;
-                modal.classList.add('active');
-                const saved = getLastPlayerId();
-                if (saved) playerInput.value = saved;
-                setTimeout(() => playerInput.focus(), 60);
+            const tick = (t) => {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                for (const s of stars) {
+                    const alpha = s.base * (0.55 + 0.45 * Math.sin(t / 1000 * s.speed + s.phase));
+                    ctx.globalAlpha = alpha;
+                    ctx.fillStyle = '#ffffff';
+                    ctx.beginPath();
+                    ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.globalAlpha = 1;
+                requestAnimationFrame(tick);
+            };
+
+            window.addEventListener('resize', resize);
+            resize();
+            requestAnimationFrame(tick);
+        })();
+
+        // ─────────────────────── Мобильное меню ─────────────────────
+        (function () {
+            const toggle = document.getElementById('menu-toggle');
+            const menu = document.getElementById('mobile-menu');
+            toggle.addEventListener('click', () => {
+                toggle.classList.toggle('open');
+                menu.classList.toggle('open');
+            });
+            menu.addEventListener('click', (e) => {
+                if (e.target.tagName === 'A') {
+                    toggle.classList.remove('open');
+                    menu.classList.remove('open');
+                }
+            });
+        })();
+
+        // ─────────────────────── Система миссий ─────────────────────
+        (function () {
+            if (!window.MissionService) return;
+
+            const listEl = document.getElementById('mission-list');
+            const counterEl = document.getElementById('mission-counter');
+            const searchInput = document.getElementById('mission-search');
+            const filterBtns = document.querySelectorAll('.filter-btn');
+            const idDisplay = document.getElementById('player-id-display');
+            const changeIdBtn = document.getElementById('change-id-btn');
+            const liveIndicator = document.getElementById('live-indicator');
+            const liveLabel = document.getElementById('live-label');
+            const toastContainer = document.getElementById('toast-container');
+
+            const idModal = document.getElementById('id-modal');
+            const idModalTitle = document.getElementById('id-modal-title');
+            const idForm = document.getElementById('id-form');
+            const idInput = document.getElementById('player-id-input');
+
+            const completeModal = document.getElementById('complete-modal');
+            const completeModalTitle = document.getElementById('complete-modal-title');
+            const completeForm = document.getElementById('complete-form');
+            const notesInput = document.getElementById('mission-notes');
+
+            const LAST_PLAYER_KEY = 'cs_last_player_id';
+            const EXPIRE_MS = MissionService.LOCK_EXPIRE_MS;
+
+            let missions = [];
+            let state = { query: '', filter: 'all' };
+            let prevSignatures = {};
+            let initialRender = true;
+            let pendingLockId = null;   // миссия, ради которой открыли модал ID
+            let completeMissionId = null;
+
+            // ── helpers ──
+            const getPlayerId = () => localStorage.getItem(LAST_PLAYER_KEY) || '';
+            const setPlayerId = (val) => { localStorage.setItem(LAST_PLAYER_KEY, val); updatePlayerChip(); };
+
+            const esc = (str) => String(str ?? '')
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
+            const updatePlayerChip = () => {
+                const id = getPlayerId();
+                idDisplay.textContent = id || 'не задан';
+            };
+
+            const showToast = (message, type = 'info') => {
+                const toast = document.createElement('div');
+                toast.className = `toast ${type}`;
+                toast.textContent = message;
+                toastContainer.appendChild(toast);
+                setTimeout(() => {
+                    toast.classList.add('hide');
+                    setTimeout(() => toast.remove(), 320);
+                }, 3000);
+            };
+
+            const fmtAgo = (ts) => {
+                if (!ts) return '';
+                const mins = Math.floor((Date.now() - ts) / 60000);
+                if (mins < 1) return 'только что';
+                if (mins < 60) return `${mins} мин назад`;
+                const h = Math.floor(mins / 60);
+                return `${h} ч ${mins % 60} мин назад`;
+            };
+
+            const isExpired = (m) => m.status === 'locked' && m.lockedAt && (Date.now() - m.lockedAt) > EXPIRE_MS;
+
+            const signature = (m) => [m.status, m.lockedBy, m.lockedAt, m.title, m.reward].join('|');
+
+            // ── рендер ──
+            const statusBadge = (m) => {
+                if (m.status === 'completed') return `<span class="status-badge status-completed"><span class="status-dot"></span><span>ВЫПОЛНЕНО</span></span>`;
+                if (m.status === 'pending') return `<span class="status-badge status-pending"><span class="status-dot"></span><span>НА ПРОВЕРКЕ</span></span>`;
+                if (m.status === 'locked') {
+                    if (isExpired(m)) return `<span class="status-badge status-expired"><span class="status-dot"></span><span>ПРОСРОЧЕНО${m.lockedBy ? ' / ' + esc(m.lockedBy) : ''}</span></span>`;
+                    return `<span class="status-badge status-locked"><span class="status-dot"></span><span>ЗАНЯТО${m.lockedBy ? ' / ' + esc(m.lockedBy) : ''}</span></span>`;
+                }
+                return `<span class="status-badge status-available"><span class="status-dot"></span><span>ДОСТУПНО</span></span>`;
+            };
+
+            const actionButtons = (m, ownerId) => {
+                const isOwner = m.lockedBy && m.lockedBy === ownerId;
+                if (m.status === 'completed') return `<button class="btn btn-disabled" disabled>ВЫПОЛНЕНО</button>`;
+                if (m.status === 'pending') return `<button class="btn btn-pending" disabled>НА ПРОВЕРКЕ У GM</button>`;
+                if (m.status === 'locked') {
+                    if (isOwner) {
+                        return `<button data-complete="${esc(m.id)}" class="btn btn-success">ПОДТВЕРДИТЬ</button>
+                                <button data-release="${esc(m.id)}" class="btn btn-ghost" title="Отказаться от миссии">✕</button>`;
+                    }
+                    return `<button class="btn btn-disabled" disabled>ЗАНЯТО</button>`;
+                }
+                return `<button data-take="${esc(m.id)}" class="btn btn-primary">ПРИНЯТЬ</button>`;
             };
 
             const render = () => {
-                const missions = MissionService.getAll();
-                const ownerId = getLastPlayerId();
-                missionContainer.innerHTML = '';
+                const ownerId = getPlayerId();
 
-                missions.forEach((mission) => {
-                    const locked = mission.status === 'locked';
-                    const isOwner = locked && mission.lockedBy && mission.lockedBy === ownerId;
-                    
-                    const card = document.createElement('div');
-                    card.className = 'mission-card';
-                    card.innerHTML = `
-                        <div class="mission-header">
-                            <span class="difficulty-badge">${mission.difficulty}</span>
-                            <span class="status-badge ${locked ? 'status-locked' : 'status-available'}">
-                                <span class="status-dot"></span>
-                                <span class="status-text">${locked ? `ЗАБЛОКИРОВАНО ${mission.lockedBy ? '/ ' + mission.lockedBy : ''}` : 'ДОСТУПНО'}</span>
-                            </span>
-                        </div>
-                        <h3 class="mission-title">${mission.title}</h3>
-                        <p class="mission-description">${mission.summary}</p>
-                        <div class="mission-footer">
-                            <div class="mission-reward">
-                                <span class="reward-label">Награда</span>
-                                <span class="reward-value">${mission.reward}</span>
-                            </div>
-                            <div class="mission-action">
-                                ${locked ? (isOwner
-                                    ? `<button data-complete="${mission.id}" class="btn btn-success">Подтвердить</button>`
-                                    : `<button class="btn btn-disabled" disabled>ЗАНЯТО</button>`
-                                )
-                                : `<button data-take="${mission.id}" class="btn btn-primary">ПРИНЯТЬ</button>`}
-                            </div>
-                        </div>
-                    `;
-                    missionContainer.appendChild(card);
+                // счётчик по полному списку
+                const available = missions.filter((m) => m.status === 'available').length;
+                const busy = missions.filter((m) => m.status === 'locked' || m.status === 'pending').length;
+                counterEl.textContent = `${available} доступно · ${busy} занято · ${missions.length} всего`;
+
+                // фильтрация
+                const q = state.query.toLowerCase();
+                const filtered = missions.filter((m) => {
+                    if (q && !m.title.toLowerCase().includes(q)) return false;
+                    if (state.filter === 'available') return m.status === 'available';
+                    if (state.filter === 'locked') return m.status === 'locked' || m.status === 'pending';
+                    return true;
                 });
 
-                // GSAP Animations
-                gsap.from(".mission-card", {
-                    y: 30,
-                    opacity: 0,
-                    duration: 0.8,
-                    stagger: 0.1,
-                    ease: "power3.out"
+                listEl.innerHTML = '';
+
+                if (!filtered.length) {
+                    listEl.innerHTML = `<div class="empty-state">Миссий не найдено</div>`;
+                } else {
+                    filtered.forEach((m) => {
+                        const card = document.createElement('div');
+                        card.className = 'mission-card' + (m.status === 'completed' ? ' is-completed' : '');
+                        card.dataset.missionId = m.id;
+
+                        const timerHtml = (m.status === 'locked' || m.status === 'pending') && m.lockedAt
+                            ? `<div class="lock-timer ${isExpired(m) ? 'expired' : ''}">⏱ Занято ${fmtAgo(m.lockedAt)}</div>`
+                            : '';
+
+                        card.innerHTML = `
+                            <div class="mission-header">
+                                <span class="difficulty-badge">${esc(m.difficulty)}</span>
+                                ${statusBadge(m)}
+                            </div>
+                            <h3 class="mission-title">${esc(m.title)}</h3>
+                            <p class="mission-description">${esc(m.summary)}</p>
+                            <div class="mission-footer">
+                                <div class="mission-reward">
+                                    <span class="reward-label">Награда</span>
+                                    <span class="reward-value">${esc(m.reward)}</span>
+                                </div>
+                                ${timerHtml}
+                            </div>
+                            <div class="mission-action">${actionButtons(m, ownerId)}</div>
+                        `;
+
+                        // подсветка карточки, изменившейся с прошлого рендера
+                        const sig = signature(m);
+                        if (!initialRender && prevSignatures[m.id] && prevSignatures[m.id] !== sig) {
+                            card.classList.add('card-updated');
+                        }
+                        listEl.appendChild(card);
+                    });
+                }
+
+                prevSignatures = {};
+                missions.forEach((m) => { prevSignatures[m.id] = signature(m); });
+
+                if (initialRender && filtered.length && window.gsap) {
+                    gsap.from('.mission-card', { y: 30, opacity: 0, duration: 0.8, stagger: 0.08, ease: 'power3.out', clearProps: 'all' });
+                }
+                initialRender = false;
+            };
+
+            // ── действия ──
+            const doLock = (id, playerId) => {
+                MissionService.lockMission(id, playerId).then((res) => {
+                    if (res.success) {
+                        showToast('Миссия принята. Удачи, солдат!', 'success');
+                    } else if (res.reason === 'locked-by-other') {
+                        showToast('Миссию уже занял другой игрок', 'error');
+                    } else if (res.reason === 'wrong-status') {
+                        showToast('Миссия сейчас недоступна', 'error');
+                    } else {
+                        showToast('Не удалось принять миссию. Попробуй ещё раз', 'error');
+                    }
                 });
             };
 
-            missionContainer.addEventListener('click', (event) => {
+            const openIdModal = (title) => {
+                idModalTitle.textContent = title;
+                idInput.value = getPlayerId();
+                idModal.classList.add('active');
+                setTimeout(() => idInput.focus(), 60);
+            };
+
+            const closeIdModal = () => {
+                idModal.classList.remove('active');
+                idForm.reset();
+                pendingLockId = null;
+            };
+
+            const openCompleteModal = (mission) => {
+                completeMissionId = mission.id;
+                completeModalTitle.textContent = mission.title;
+                notesInput.value = '';
+                completeModal.classList.add('active');
+                setTimeout(() => notesInput.focus(), 60);
+            };
+
+            const closeCompleteModal = () => {
+                completeModal.classList.remove('active');
+                completeForm.reset();
+                completeMissionId = null;
+            };
+
+            // ── события ──
+            listEl.addEventListener('click', (event) => {
                 const takeId = event.target.getAttribute('data-take');
                 const completeId = event.target.getAttribute('data-complete');
+                const releaseId = event.target.getAttribute('data-release');
 
                 if (takeId) {
-                    const mission = MissionService.getAll().find((m) => m.id === takeId);
-                    if (mission) openModal(mission);
+                    const pid = getPlayerId();
+                    if (!pid) {
+                        pendingLockId = takeId;
+                        openIdModal('Game ID');
+                        return;
+                    }
+                    doLock(takeId, pid);
                 }
 
                 if (completeId) {
-                    const ownerId = getLastPlayerId();
-                    const result = MissionService.releaseMission(completeId, ownerId);
-                    if (!result.success && result.reason === 'locked-by-other') {
-                        alert('Эта миссия заблокирована другим Game ID. Используй тот же ID который ее заблокировал.');
-                        return;
-                    }
-                    render();
+                    const mission = missions.find((m) => m.id === completeId);
+                    if (mission) openCompleteModal(mission);
+                }
+
+                if (releaseId) {
+                    MissionService.releaseMission(releaseId, getPlayerId()).then((res) => {
+                        if (res.success) showToast('Миссия возвращена на доску', 'info');
+                        else showToast('Не удалось освободить миссию', 'error');
+                    });
                 }
             });
 
-            form.addEventListener('submit', (event) => {
+            idForm.addEventListener('submit', (event) => {
                 event.preventDefault();
-                const playerId = playerInput.value.trim();
-                if (!selectedMissionId || !playerId) return;
-                setLastPlayerId(playerId);
-                const outcome = MissionService.lockMission(selectedMissionId, playerId);
-                if (!outcome.success) {
-                    if (outcome.reason === 'locked-by-other') {
-                        alert('Эта миссия уже заблокирована другим Game ID.');
+                const value = idInput.value.trim();
+                if (!value) return;
+                setPlayerId(value);
+                const lockTarget = pendingLockId;
+                closeIdModal();
+                showToast(`Game ID сохранён: ${value}`, 'success');
+                if (lockTarget) doLock(lockTarget, value);
+                render(); // кнопки "ПОДТВЕРДИТЬ" могли смениться
+            });
+
+            completeForm.addEventListener('submit', (event) => {
+                event.preventDefault();
+                if (!completeMissionId) return;
+                MissionService.completeMission(completeMissionId, getPlayerId(), notesInput.value).then((res) => {
+                    if (res.success) {
+                        showToast('Отчёт отправлен — миссия на проверке у GM', 'success');
+                    } else if (res.reason === 'locked-by-other') {
+                        showToast('Эта миссия занята другим Game ID', 'error');
                     } else {
-                        alert('Не удалось заблокировать миссию. Попробуй еще раз.');
+                        showToast('Не удалось отправить отчёт', 'error');
                     }
-                    return;
-                }
-                closeModal();
+                });
+                closeCompleteModal();
+            });
+
+            changeIdBtn.addEventListener('click', () => openIdModal('Сменить Game ID'));
+
+            document.getElementById('id-modal-close').addEventListener('click', closeIdModal);
+            document.getElementById('id-modal-cancel').addEventListener('click', closeIdModal);
+            idModal.addEventListener('click', (e) => { if (e.target === idModal) closeIdModal(); });
+
+            document.getElementById('complete-modal-close').addEventListener('click', closeCompleteModal);
+            document.getElementById('complete-modal-cancel').addEventListener('click', closeCompleteModal);
+            completeModal.addEventListener('click', (e) => { if (e.target === completeModal) closeCompleteModal(); });
+
+            searchInput.addEventListener('input', () => {
+                state.query = searchInput.value.trim();
                 render();
             });
 
-            modal.addEventListener('click', (event) => {
-                if (event.target === modal) closeModal();
+            filterBtns.forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    filterBtns.forEach((b) => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    state.filter = btn.dataset.filter;
+                    render();
+                });
             });
 
-            closeBtn.addEventListener('click', closeModal);
-            cancelBtn.addEventListener('click', closeModal);
+            // ── реалтайм-подписки ──
+            MissionService.subscribe((list) => {
+                missions = list;
+                render();
+            });
 
-            render();
+            MissionService.onConnectionChange((conn) => {
+                liveIndicator.classList.remove('online', 'offline', 'local');
+                liveIndicator.classList.add(conn);
+                liveLabel.textContent = conn === 'online' ? 'LIVE' : (conn === 'local' ? 'LOCAL' : 'OFFLINE');
+                liveIndicator.title = conn === 'local'
+                    ? 'Firebase не настроен — данные хранятся только в этом браузере'
+                    : (conn === 'online' ? 'Подключено к серверу' : 'Нет соединения с сервером');
+            });
+
+            // таймеры "Занято X мин назад" и статус ПРОСРОЧЕНО
+            setInterval(() => {
+                if (missions.some((m) => m.status === 'locked' || m.status === 'pending')) render();
+            }, 30000);
+
+            updatePlayerChip();
         })();
 
-        // Animations & Smooth Scroll
+        // ─────────────────── Плавный скролл + анимации ──────────────
         const lenis = new Lenis({
             duration: 1.2,
             easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
@@ -853,13 +1359,13 @@
         requestAnimationFrame(raf);
 
         gsap.registerPlugin(ScrollTrigger);
-        gsap.from(".hero-reveal", {
+        gsap.from('.hero-reveal', {
             y: 40,
             opacity: 0,
             duration: 1.2,
             stagger: 0.2,
-            ease: "power3.out",
-            clearProps: "all"
+            ease: 'power3.out',
+            clearProps: 'all'
         });
     </script>
 </body>

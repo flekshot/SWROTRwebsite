@@ -1,192 +1,475 @@
-(function () {
-  const STORAGE_KEY = 'cs_missions_v1';
-  const LOG_KEY = 'cs_mission_logs_v1';
+/* ============================================================
+   MissionService — общая доска миссий "Rise of the Republic"
+   Хранилище: Firebase Realtime Database (общее для всех игроков).
+   Если Firebase config не вставлен — сервис автоматически работает
+   в локальном режиме (localStorage), чтобы сайт открывался и без
+   настройки. Индикатор на странице покажет "LOCAL".
 
-  const defaultMissions = [
-    {
-      id: 'mission-alpha',
+   Статусы миссии:
+     available — свободна
+     locked    — занята игроком (lockedBy / lockedAt)
+     pending   — игрок отправил отчёт, ждёт подтверждения GM (notes)
+     completed — подтверждена геймастером
+   ============================================================ */
+(function () {
+  'use strict';
+
+  // ──────────────────────────────────────────────────────────
+  // Вставь свой Firebase config сюда
+  // (Firebase Console → Project Settings → General → Your apps)
+  // Realtime Database: Build → Realtime Database → Create database
+  // ──────────────────────────────────────────────────────────
+  const firebaseConfig = {
+    apiKey: "PASTE_YOUR_API_KEY",
+    authDomain: "your-project.firebaseapp.com",
+    databaseURL: "https://your-project-default-rtdb.firebaseio.com",
+    projectId: "your-project",
+    storageBucket: "your-project.appspot.com",
+    messagingSenderId: "000000000000",
+    appId: "PASTE_YOUR_APP_ID"
+  };
+
+  const LOCK_EXPIRE_MS = 60 * 60 * 1000; // 60 минут до статуса "ПРОСРОЧЕНО"
+  const STORAGE_KEY = 'cs_missions_v2';
+  const LOG_KEY = 'cs_mission_logs_v1';
+  const MAX_LOGS = 50;
+
+  const defaultMissions = {
+    'mission-alpha': {
       title: 'Захват ретранслятора',
       summary: 'Стабилизируйте башню связи и перехватите чистый поток данных.',
       difficulty: 'Высокий риск',
       reward: '750 XP + Приоритетный лут',
       status: 'available',
-      lockedBy: null,
-      lockedAt: null
+      order: 1
     },
-    {
-      id: 'mission-bravo',
+    'mission-bravo': {
       title: 'Призрачная эвакуация',
       summary: 'Эвакуируйте сбитого оперативника, не активируя тепловые датчики.',
       difficulty: 'Скрытность',
       reward: '600 XP + Скрытый тайник',
       status: 'available',
-      lockedBy: null,
-      lockedAt: null
+      order: 2
     },
-    {
-      id: 'mission-charlie',
+    'mission-charlie': {
       title: 'Перегрузка энергосети',
       summary: 'Отключите вражеские источники питания и перенаправьте энергию на союзные ядра.',
       difficulty: 'Технический',
       reward: '500 XP + Кредиты ядра',
       status: 'available',
-      lockedBy: null,
-      lockedAt: null
+      order: 3
     }
-  ];
+  };
+
+  // ───────────────────────── Общее состояние ─────────────────
+
+  let cache = [];          // актуальный список миссий (массив)
+  let logsCache = [];      // последние записи журнала
+  let connState = 'offline'; // 'online' | 'offline' | 'local'
+
+  const missionSubs = [];
+  const connSubs = [];
+  const logSubs = [];
 
   const clone = (value) => JSON.parse(JSON.stringify(value));
 
-  const save = (list) => localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+  const notifyMissions = () => missionSubs.forEach((fn) => {
+    try { fn(clone(cache)); } catch (err) { console.error('Mission subscriber error', err); }
+  });
+  const notifyLogs = () => logSubs.forEach((fn) => {
+    try { fn(clone(logsCache)); } catch (err) { console.error('Log subscriber error', err); }
+  });
+  const setConn = (state) => {
+    connState = state;
+    connSubs.forEach((fn) => {
+      try { fn(connState); } catch (err) { console.error('Connection subscriber error', err); }
+    });
+  };
 
-  const load = () => {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
+  // Firebase не хранит null-поля, поэтому приводим записи к полной форме
+  const normalize = (id, raw) => ({
+    id,
+    title: raw.title || 'Без названия',
+    summary: raw.summary || '',
+    difficulty: raw.difficulty || 'Standard',
+    reward: raw.reward || 'XP',
+    status: raw.status || 'available',
+    lockedBy: raw.lockedBy || null,
+    lockedAt: raw.lockedAt || null,
+    notes: raw.notes || '',
+    completedAt: raw.completedAt || null,
+    order: raw.order || 0
+  });
+
+  const toList = (map) => Object.keys(map || {})
+    .map((id) => normalize(id, map[id]))
+    .sort((a, b) => a.order - b.order);
+
+  const makeId = () => 'mission-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+
+  // ───────────────────────── Firebase backend ────────────────
+
+  function createFirebaseBackend() {
+    const db = firebase.database();
+    const missionsRef = db.ref('missions');
+    const logsRef = db.ref('logs');
+
+    missionsRef.on('value', (snap) => {
+      const val = snap.val();
+      if (!val) {
+        // первая инициализация базы — заливаем стартовый набор
+        missionsRef.set(clone(defaultMissions));
+        return;
+      }
+      cache = toList(val);
+      notifyMissions();
+    });
+
+    logsRef.limitToLast(MAX_LOGS).on('value', (snap) => {
+      const val = snap.val() || {};
+      logsCache = Object.keys(val)
+        .map((key) => ({ id: key, ...val[key] }))
+        .sort((a, b) => b.timestamp - a.timestamp);
+      notifyLogs();
+    });
+
+    db.ref('.info/connected').on('value', (snap) => {
+      setConn(snap.val() ? 'online' : 'offline');
+    });
+
+    const logAction = (action, details) => {
+      logsRef.push({ timestamp: Date.now(), action, details });
+    };
+
+    // Транзакция по одной миссии. mutate(current) возвращает либо новый
+    // объект миссии, либо { __fail: reason } для отказа. Транзакции
+    // Firebase исключают гонку, когда два игрока берут миссию одновременно.
+    const runTx = (id, mutate) => new Promise((resolve) => {
+      let failReason = null;
+      missionsRef.child(id).transaction((current) => {
+        failReason = null;
+        // первый прогон может прийти с null — возвращаем null,
+        // Firebase перезапустит транзакцию с реальными данными
+        if (current === null) return null;
+        const result = mutate(current);
+        if (result && result.__fail) {
+          failReason = result.__fail;
+          return; // undefined = отмена транзакции
+        }
+        return result;
+      }, (error, committed, snapshot) => {
+        if (error) return resolve({ success: false, reason: 'error' });
+        if (!committed) return resolve({ success: false, reason: failReason || 'conflict' });
+        if (!snapshot || snapshot.val() === null) return resolve({ success: false, reason: 'not-found' });
+        resolve({ success: true, mission: normalize(id, snapshot.val()) });
+      });
+    });
+
+    return {
+      mode: 'firebase',
+      logAction,
+      clearLogs: () => logsRef.remove(),
+
+      lockMission(id, playerId) {
+        if (!playerId) return Promise.resolve({ success: false, reason: 'missing-player' });
+        return runTx(id, (m) => {
+          if (m.status === 'locked' && m.lockedBy === playerId) return m; // уже твоя
+          if (m.status !== 'available') {
+            return { __fail: m.status === 'locked' ? 'locked-by-other' : 'wrong-status' };
+          }
+          return { ...m, status: 'locked', lockedBy: playerId, lockedAt: Date.now(), notes: null, completedAt: null };
+        }).then((res) => {
+          if (res.success) logAction('MISSION_LOCK', `Миссия "${res.mission.title}" занята игроком ${playerId}`);
+          return res;
+        });
+      },
+
+      releaseMission(id, playerId) {
+        return runTx(id, (m) => {
+          if (m.status === 'available') return m;
+          // playerId == null означает принудительное освобождение (админ)
+          if (playerId && m.lockedBy && m.lockedBy !== playerId) {
+            return { __fail: 'locked-by-other' };
+          }
+          return { ...m, status: 'available', lockedBy: null, lockedAt: null, notes: null, completedAt: null };
+        }).then((res) => {
+          if (res.success) logAction('MISSION_RELEASE', `Миссия "${res.mission.title}" освобождена`);
+          return res;
+        });
+      },
+
+      completeMission(id, playerId, notes) {
+        if (!playerId) return Promise.resolve({ success: false, reason: 'missing-player' });
+        return runTx(id, (m) => {
+          if (m.status !== 'locked') return { __fail: 'wrong-status' };
+          if (m.lockedBy !== playerId) return { __fail: 'locked-by-other' };
+          return { ...m, status: 'pending', notes: (notes || '').trim(), completedAt: Date.now() };
+        }).then((res) => {
+          if (res.success) logAction('MISSION_PENDING', `Игрок ${playerId} отправил миссию "${res.mission.title}" на проверку`);
+          return res;
+        });
+      },
+
+      approveMission(id) {
+        return runTx(id, (m) => {
+          if (m.status !== 'pending') return { __fail: 'wrong-status' };
+          return { ...m, status: 'completed' };
+        }).then((res) => {
+          if (res.success) logAction('MISSION_APPROVE', `Миссия "${res.mission.title}" подтверждена GM (игрок ${res.mission.lockedBy})`);
+          return res;
+        });
+      },
+
+      rejectMission(id) {
+        return runTx(id, (m) => {
+          if (m.status !== 'pending') return { __fail: 'wrong-status' };
+          return { ...m, status: 'available', lockedBy: null, lockedAt: null, notes: null, completedAt: null };
+        }).then((res) => {
+          if (res.success) logAction('MISSION_REJECT', `Миссия "${res.mission.title}" отклонена GM и возвращена на доску`);
+          return res;
+        });
+      },
+
+      addMission(data) {
+        const id = data.id || makeId();
+        const mission = {
+          title: (data.title || '').trim() || 'Untitled Mission',
+          summary: (data.summary || '').trim(),
+          difficulty: data.difficulty || 'Standard',
+          reward: data.reward || 'XP',
+          status: 'available',
+          order: Date.now()
+        };
+        return missionsRef.child(id).set(mission).then(() => {
+          logAction('MISSION_CREATE', `Создана миссия: ${mission.title}`);
+          return { success: true };
+        });
+      },
+
+      updateMission(id, updates) {
+        const safe = {};
+        ['title', 'summary', 'difficulty', 'reward'].forEach((key) => {
+          if (updates[key] !== undefined) safe[key] = updates[key];
+        });
+        return missionsRef.child(id).update(safe).then(() => {
+          logAction('MISSION_UPDATE', `Обновлена миссия: ${safe.title || id}`);
+          return { success: true };
+        });
+      },
+
+      removeMission(id) {
+        const mission = cache.find((m) => m.id === id);
+        return missionsRef.child(id).remove().then(() => {
+          if (mission) logAction('MISSION_DELETE', `Удалена миссия: ${mission.title}`);
+          return { success: true };
+        });
+      },
+
+      reset() {
+        return missionsRef.set(clone(defaultMissions)).then(() => {
+          logAction('SYSTEM_RESET', 'Сброс всех миссий к начальным настройкам');
+          return { success: true };
+        });
+      }
+    };
+  }
+
+  // ───────────────────── Локальный fallback (localStorage) ────
+
+  function createLocalBackend() {
+    const loadMap = () => {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        const parsed = raw ? JSON.parse(raw) : null;
+        return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : null;
+      } catch (err) { return null; }
+    };
+    const saveMap = (m) => localStorage.setItem(STORAGE_KEY, JSON.stringify(m));
+    const loadLogs = () => {
+      try { return JSON.parse(localStorage.getItem(LOG_KEY)) || []; }
+      catch (err) { return []; }
+    };
+    const saveLogs = (l) => localStorage.setItem(LOG_KEY, JSON.stringify(l));
+
+    let map = loadMap();
+    if (!map) { map = clone(defaultMissions); saveMap(map); }
+    let logs = loadLogs();
+
+    const sync = () => { cache = toList(map); notifyMissions(); };
+    const syncLogs = () => { logsCache = clone(logs); notifyLogs(); };
+
+    // синхронизация между вкладками одного браузера
+    window.addEventListener('storage', (e) => {
+      if (e.key === STORAGE_KEY) { map = loadMap() || {}; sync(); }
+      if (e.key === LOG_KEY) { logs = loadLogs(); syncLogs(); }
+    });
+
+    const logAction = (action, details) => {
+      logs.unshift({
+        id: Date.now().toString(36) + Math.random().toString(36).slice(2),
+        timestamp: Date.now(),
+        action,
+        details
+      });
+      if (logs.length > MAX_LOGS) logs.length = MAX_LOGS;
+      saveLogs(logs);
+      syncLogs();
+    };
+
+    const commit = (mission, action, details) => {
+      saveMap(map);
+      sync();
+      if (action) logAction(action, details);
+      return Promise.resolve({ success: true, mission: clone(mission) });
+    };
+    const fail = (reason) => Promise.resolve({ success: false, reason });
+
+    cache = toList(map);
+    logsCache = clone(logs);
+    connState = 'local';
+
+    return {
+      mode: 'local',
+      logAction,
+      clearLogs: () => { logs = []; saveLogs(logs); syncLogs(); return Promise.resolve({ success: true }); },
+
+      lockMission(id, playerId) {
+        if (!playerId) return fail('missing-player');
+        const m = map[id];
+        if (!m) return fail('not-found');
+        if (m.status === 'locked' && m.lockedBy === playerId) return Promise.resolve({ success: true, mission: clone(m) });
+        if (m.status !== 'available') return fail(m.status === 'locked' ? 'locked-by-other' : 'wrong-status');
+        Object.assign(m, { status: 'locked', lockedBy: playerId, lockedAt: Date.now(), notes: '', completedAt: null });
+        return commit(m, 'MISSION_LOCK', `Миссия "${m.title}" занята игроком ${playerId}`);
+      },
+
+      releaseMission(id, playerId) {
+        const m = map[id];
+        if (!m) return fail('not-found');
+        if (m.status === 'available') return Promise.resolve({ success: true, mission: clone(m) });
+        if (playerId && m.lockedBy && m.lockedBy !== playerId) return fail('locked-by-other');
+        Object.assign(m, { status: 'available', lockedBy: null, lockedAt: null, notes: '', completedAt: null });
+        return commit(m, 'MISSION_RELEASE', `Миссия "${m.title}" освобождена`);
+      },
+
+      completeMission(id, playerId, notes) {
+        if (!playerId) return fail('missing-player');
+        const m = map[id];
+        if (!m) return fail('not-found');
+        if (m.status !== 'locked') return fail('wrong-status');
+        if (m.lockedBy !== playerId) return fail('locked-by-other');
+        Object.assign(m, { status: 'pending', notes: (notes || '').trim(), completedAt: Date.now() });
+        return commit(m, 'MISSION_PENDING', `Игрок ${playerId} отправил миссию "${m.title}" на проверку`);
+      },
+
+      approveMission(id) {
+        const m = map[id];
+        if (!m) return fail('not-found');
+        if (m.status !== 'pending') return fail('wrong-status');
+        m.status = 'completed';
+        return commit(m, 'MISSION_APPROVE', `Миссия "${m.title}" подтверждена GM (игрок ${m.lockedBy})`);
+      },
+
+      rejectMission(id) {
+        const m = map[id];
+        if (!m) return fail('not-found');
+        if (m.status !== 'pending') return fail('wrong-status');
+        Object.assign(m, { status: 'available', lockedBy: null, lockedAt: null, notes: '', completedAt: null });
+        return commit(m, 'MISSION_REJECT', `Миссия "${m.title}" отклонена GM и возвращена на доску`);
+      },
+
+      addMission(data) {
+        const id = data.id || makeId();
+        map[id] = {
+          title: (data.title || '').trim() || 'Untitled Mission',
+          summary: (data.summary || '').trim(),
+          difficulty: data.difficulty || 'Standard',
+          reward: data.reward || 'XP',
+          status: 'available',
+          order: Date.now()
+        };
+        return commit(map[id], 'MISSION_CREATE', `Создана миссия: ${map[id].title}`);
+      },
+
+      updateMission(id, updates) {
+        const m = map[id];
+        if (!m) return fail('not-found');
+        ['title', 'summary', 'difficulty', 'reward'].forEach((key) => {
+          if (updates[key] !== undefined) m[key] = updates[key];
+        });
+        return commit(m, 'MISSION_UPDATE', `Обновлена миссия: ${m.title}`);
+      },
+
+      removeMission(id) {
+        const m = map[id];
+        if (!m) return fail('not-found');
+        const title = m.title;
+        delete map[id];
+        return commit(null, 'MISSION_DELETE', `Удалена миссия: ${title}`);
+      },
+
+      reset() {
+        map = clone(defaultMissions);
+        return commit(null, 'SYSTEM_RESET', 'Сброс всех миссий к начальным настройкам');
+      }
+    };
+  }
+
+  // ───────────────────────── Выбор backend ───────────────────
+
+  let backend;
+  const configured = typeof firebase !== 'undefined' &&
+    firebaseConfig.apiKey &&
+    firebaseConfig.apiKey.indexOf('PASTE_') !== 0;
+
+  if (configured) {
     try {
-      const parsed = JSON.parse(raw);
-      return Array.isArray(parsed) ? parsed : null;
+      firebase.initializeApp(firebaseConfig);
+      backend = createFirebaseBackend();
     } catch (err) {
-      console.warn('Mission storage parse failed', err);
-      return null;
+      console.warn('Firebase init failed — переключаюсь на localStorage', err);
+      backend = createLocalBackend();
     }
-  };
-
-  // Logging System
-  const saveLogs = (logs) => localStorage.setItem(LOG_KEY, JSON.stringify(logs));
-  
-  const getLogs = () => {
-    const raw = localStorage.getItem(LOG_KEY);
-    if (!raw) return [];
-    try {
-      return JSON.parse(raw);
-    } catch (err) {
-      return [];
+  } else {
+    if (typeof firebase === 'undefined') {
+      console.info('Firebase SDK не подключён — MissionService работает локально.');
+    } else {
+      console.info('Firebase config не заполнен — MissionService работает локально. Вставь config в mission.js.');
     }
-  };
+    backend = createLocalBackend();
+  }
 
-  const logAction = (action, details) => {
-    const logs = getLogs();
-    const entry = {
-      id: Date.now().toString(36) + Math.random().toString(36).substr(2),
-      timestamp: Date.now(),
-      action,
-      details
-    };
-    logs.unshift(entry); // Add to beginning
-    if (logs.length > 50) logs.pop(); // Keep last 50
-    saveLogs(logs);
-  };
+  // ───────────────────────── Публичное API ───────────────────
 
-  const ensureList = () => {
-    const cached = load();
-    if (cached && Array.isArray(cached)) {
-      return cached;
-    }
-    const seeded = clone(defaultMissions);
-    save(seeded);
-    return seeded;
-  };
-
-  const persist = (list) => {
-    save(list);
-    return clone(list);
-  };
-
-  const getAll = () => clone(ensureList());
-
-  const addMission = (data) => {
-    const list = ensureList();
-    const id = data.id || `mission-${Date.now()}`;
-    const mission = {
-      id,
-      title: data.title?.trim() || 'Untitled Mission',
-      summary: data.summary?.trim() || '',
-      difficulty: data.difficulty || 'Standard',
-      reward: data.reward || 'XP',
-      status: 'available',
-      lockedBy: null,
-      lockedAt: null
-    };
-    list.push(mission);
-    persist(list);
-    logAction('MISSION_CREATE', `Создана миссия: ${mission.title}`);
-    return mission;
-  };
-
-  const updateMission = (id, updates) => {
-    const list = ensureList();
-    const idx = list.findIndex((m) => m.id === id);
-    if (idx === -1) return null;
-    const oldTitle = list[idx].title;
-    list[idx] = {
-      ...list[idx],
-      ...updates,
-      id: list[idx].id
-    };
-    persist(list);
-    logAction('MISSION_UPDATE', `Обновлена миссия: ${oldTitle}`);
-    return list[idx];
-  };
-
-  const removeMission = (id) => {
-    const list = ensureList();
-    const mission = list.find((m) => m.id === id);
-    const newList = list.filter((m) => m.id !== id);
-    persist(newList);
-    if(mission) logAction('MISSION_DELETE', `Удалена миссия: ${mission.title}`);
-    return true;
-  };
-
-  const lockMission = (id, playerId) => {
-    if (!playerId) return { success: false, reason: 'missing-player' };
-    const list = ensureList();
-    const mission = list.find((m) => m.id === id);
-    if (!mission) return { success: false, reason: 'not-found' };
-    if (mission.status === 'locked' && mission.lockedBy && mission.lockedBy !== playerId) {
-      return { success: false, reason: 'locked-by-other', mission };
-    }
-    mission.status = 'locked';
-    mission.lockedBy = playerId;
-    mission.lockedAt = Date.now();
-    persist(list);
-    logAction('MISSION_LOCK', `Миссия "${mission.title}" заблокирована игроком ${playerId}`);
-    return { success: true, mission };
-  };
-
-  const releaseMission = (id, playerId) => {
-    const list = ensureList();
-    const mission = list.find((m) => m.id === id);
-    if (!mission) return { success: false, reason: 'not-found' };
-    if (mission.status === 'locked' && mission.lockedBy && playerId && mission.lockedBy !== playerId) {
-      return { success: false, reason: 'locked-by-other', mission };
-    }
-    mission.status = 'available';
-    mission.lockedBy = null;
-    mission.lockedAt = null;
-    persist(list);
-    logAction('MISSION_RELEASE', `Миссия "${mission.title}" освобождена`);
-    return { success: true, mission };
-  };
-
-  const reset = () => {
-    persist(clone(defaultMissions));
-    logAction('SYSTEM_RESET', 'Сброс всех миссий к начальным настройкам');
-  };
-
-  const clearLogs = () => {
-    saveLogs([]);
+  const unsubscriber = (arr, fn) => () => {
+    const idx = arr.indexOf(fn);
+    if (idx !== -1) arr.splice(idx, 1);
   };
 
   window.MissionService = {
-    getAll,
-    addMission,
-    updateMission,
-    removeMission,
-    lockMission,
-    releaseMission,
-    reset,
-    getLogs,
-    logAction,
-    clearLogs
+    LOCK_EXPIRE_MS,
+    getMode: () => backend.mode,
+
+    // снимок текущего списка (синхронно, из кэша)
+    getAll: () => clone(cache),
+    getLogs: () => clone(logsCache),
+
+    // реалтайм-подписки; колбэк вызывается сразу с текущим состоянием
+    subscribe(fn) { missionSubs.push(fn); fn(clone(cache)); return unsubscriber(missionSubs, fn); },
+    subscribeLogs(fn) { logSubs.push(fn); fn(clone(logsCache)); return unsubscriber(logSubs, fn); },
+    onConnectionChange(fn) { connSubs.push(fn); fn(connState); return unsubscriber(connSubs, fn); },
+
+    // все мутации возвращают Promise<{success, reason?, mission?}>
+    lockMission: (id, playerId) => backend.lockMission(id, playerId),
+    releaseMission: (id, playerId) => backend.releaseMission(id, playerId),
+    completeMission: (id, playerId, notes) => backend.completeMission(id, playerId, notes),
+    approveMission: (id) => backend.approveMission(id),
+    rejectMission: (id) => backend.rejectMission(id),
+    addMission: (data) => backend.addMission(data),
+    updateMission: (id, updates) => backend.updateMission(id, updates),
+    removeMission: (id) => backend.removeMission(id),
+    reset: () => backend.reset(),
+    logAction: (action, details) => backend.logAction(action, details),
+    clearLogs: () => backend.clearLogs()
   };
 })();
