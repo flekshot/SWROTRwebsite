@@ -15,18 +15,12 @@
   'use strict';
 
   // ──────────────────────────────────────────────────────────
-  // Вставь свой Firebase config сюда
-  // (Firebase Console → Project Settings → General → Your apps)
-  // Realtime Database: Build → Realtime Database → Create database
+  // Firebase config. Для Realtime Database достаточно databaseURL.
+  // Если позже понадобится Auth/Storage — добавь остальные поля
+  // из Firebase Console → Project Settings → General → Your apps.
   // ──────────────────────────────────────────────────────────
   const firebaseConfig = {
-    apiKey: "PASTE_YOUR_API_KEY",
-    authDomain: "your-project.firebaseapp.com",
-    databaseURL: "https://your-project-default-rtdb.firebaseio.com",
-    projectId: "your-project",
-    storageBucket: "your-project.appspot.com",
-    messagingSenderId: "000000000000",
-    appId: "PASTE_YOUR_APP_ID"
+    databaseURL: "https://swrotr-default-rtdb.firebaseio.com"
   };
 
   const LOCK_EXPIRE_MS = 60 * 60 * 1000; // 60 минут до статуса "ПРОСРОЧЕНО"
@@ -505,8 +499,8 @@
 
   let backend;
   const configured = typeof firebase !== 'undefined' &&
-    firebaseConfig.apiKey &&
-    firebaseConfig.apiKey.indexOf('PASTE_') !== 0;
+    firebaseConfig.databaseURL &&
+    firebaseConfig.databaseURL.indexOf('your-project') === -1;
 
   if (configured) {
     try {
