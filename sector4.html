@@ -8,88 +8,28 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
     <script src="https://unpkg.com/lenis@1.1.18/dist/lenis.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Syncopate:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Syncopate:wght@400;700&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="theme.css">
     <style>
-        :root {
-            --bg-dark: #020202;
-            --accent-primary: #00f2ff;
-            --accent-secondary: #7000ff;
-            --text-main: #ffffff;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        html.lenis, html.lenis body {
-            height: auto;
-        }
-
-        body {
-            font-family: 'Space Grotesk', sans-serif;
-            background-color: var(--bg-dark);
-            color: var(--text-main);
-            overflow-x: hidden;
-            line-height: 1.4;
-        }
-
-        .grid-bg {
-            position: fixed;
-            inset: 0;
-            background-image: 
-                linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
-            background-size: 40px 40px;
-            z-index: -2;
-            pointer-events: none;
-        }
-
-        .hero-noise {
-            position: fixed;
-            inset: 0;
-            z-index: -1;
-            opacity: 0.03;
-            pointer-events: none;
-            background-image: url('https://grainy-gradients.vercel.app/noise.svg');
-        }
-
-        .font-syncopate { font-family: 'Syncopate', sans-serif; }
-
-        .gradient-text {
-            background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .section-reveal {
-            opacity: 0;
-            transform: translateY(30px);
-        }
-
-        .glass-card {
-            background: rgba(255, 255, 255, 0.02);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            transition: all 0.6s cubic-bezier(0.19, 1, 0.22, 1);
-            cursor: pointer;
-        }
-
-        .glass-card:hover {
-            border-color: var(--accent-primary);
-            background: rgba(255, 255, 255, 0.04);
-            box-shadow: 0 20px 40px rgba(0, 242, 255, 0.15);
-        }
+        .glass-card { cursor: pointer; }
 
         .faq-question {
-            color: var(--accent-primary);
+            color: var(--gold);
             font-weight: 600;
             margin-bottom: 12px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+        }
+
+        .faq-question .faq-plus {
+            font-size: 20px;
+            color: var(--amber);
+            transition: transform 0.3s ease;
+        }
+
+        .glass-card.active .faq-plus {
+            transform: rotate(45deg);
         }
 
         .faq-answer {
@@ -104,92 +44,28 @@
         .glass-card.active .faq-answer {
             max-height: 300px;
         }
-
-        .site-footer {
-            position: fixed;
-            left: 50%;
-            bottom: 24px;
-            transform: translateX(-50%);
-            z-index: 1200;
-            pointer-events: none;
-        }
-
-        .footer-credit {
-            display: inline-block;
-            color: rgba(0, 242, 255, 0.6);
-            font-size: 12px;
-            padding: 8px 16px;
-            border: 1px solid rgba(0, 242, 255, 0.2);
-            border-radius: 4px;
-            background: rgba(2, 2, 2, 0.8);
-            backdrop-filter: blur(10px);
-            letter-spacing: 1px;
-            font-weight: 500;
-        }
-
-        .nav-link {
-            color: rgba(255, 255, 255, 0.7);
-            transition: color 0.3s ease;
-        }
-
-        .nav-link:hover {
-            color: var(--accent-primary);
-        }
-
-        .animated-gradient {
-            background: linear-gradient(90deg, #00f2ff, #7000ff, #ff00ff, #ffa500, #00f2ff);
-            background-size: 300% 100%;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            animation: gradientShift 8s ease infinite;
-            font-family: 'Syncopate', sans-serif;
-            font-weight: bold;
-            letter-spacing: -0.02em;
-        }
-
-        @keyframes gradientShift {
-            0% { background-position: 0% center; }
-            50% { background-position: 100% center; }
-            100% { background-position: 0% center; }
-        }
-
-        h1, h2, h3, h4, h5, h6, p, span, a, div {
-            user-select: none;
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
-        }
-
-        img, svg {
-            pointer-events: none;
-            user-select: none;
-        }
     </style>
 </head>
 <body class="antialiased">
-    <div class="grid-bg"></div>
-    <div class="hero-noise"></div>
-
-    <nav class="fixed top-0 left-0 w-full z-50 px-8 py-6 border-b border-white/10 backdrop-blur-xl bg-black/50">
-        <div class="max-w-7xl mx-auto flex justify-between items-center">
-            <a href="index.html" class="animated-gradient text-xl">Городской Ивент</a>
-            <div class="hidden md:flex items-center gap-12">
+    <nav class="site-nav">
+        <div class="nav-inner">
+            <a href="index.html" class="logo"><span class="logo-mark">✦</span>Городской Ивент</a>
+            <div class="nav-links">
                 <a href="index.html" class="nav-link">Главная</a>
                 <a href="quests.html" class="nav-link">Миссии</a>
                 <a href="sector1.html" class="nav-link">Карта</a>
                 <a href="sector2.html" class="nav-link">Гайды</a>
                 <a href="sector3.html" class="nav-link">Фракции</a>
-                <a href="sector4.html" class="nav-link text-cyan-400">FAQ</a>
+                <a href="sector4.html" class="nav-link">FAQ</a>
             </div>
         </div>
     </nav>
 
     <header class="relative min-h-screen flex items-center justify-center px-8 overflow-hidden pt-24">
         <div class="absolute inset-0 z-0">
-            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80vw] h-[80vw] border border-cyan-400/[0.03] rounded-full"></div>
+            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80vw] h-[80vw] border border-yellow-400/[0.04] rounded-full"></div>
             <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60vw] h-[60vw] border border-white/[0.02] rounded-full"></div>
-            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[40vw] h-[40vw] border border-cyan-400/[0.05] rounded-full"></div>
+            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[40vw] h-[40vw] border border-yellow-400/[0.06] rounded-full"></div>
         </div>
 
         <div class="max-w-7xl mx-auto w-full relative z-10">
@@ -197,7 +73,7 @@
                 <div class="col-span-12 lg:col-span-4 hero-reveal">
                     <div class="space-y-12">
                         <div>
-                            <span class="text-cyan-400 font-bold tracking-[0.4em] uppercase text-[9px] mb-4 block">// FAQ</span>
+                            <span class="text-yellow-400 font-bold tracking-[0.4em] uppercase text-[9px] mb-4 block">// FAQ</span>
                             <p class="text-lg text-neutral-400 leading-relaxed opacity-80">
                                 Найдите ответы на часто задаваемые вопросы о мероприятии.
                             </p>
@@ -221,7 +97,7 @@
                 <div class="glass-card p-8 section-reveal" onclick="this.classList.toggle('active')">
                     <div class="faq-question">
                         <span>Что может делать мой персонаж?</span>
-                        <span style="font-size: 20px;">+</span>
+                        <span class="faq-plus">+</span>
                     </div>
                     <div class="faq-answer">
                         Ваш персонаж может взаимодействовать с другими участниками, выполнять миссии, исследовать мир, вступать в организации и фракции, участвовать в различных событиях и активностях в зависимости от желания игрока.
@@ -232,7 +108,7 @@
                 <div class="glass-card p-8 section-reveal" onclick="this.classList.toggle('active')">
                     <div class="faq-question">
                         <span>Как получить доступ к организациям?</span>
-                        <span style="font-size: 20px;">+</span>
+                        <span class="faq-plus">+</span>
                     </div>
                     <div class="faq-answer">
                         Доступ к организациям и фракциям можно получить через внутриигровые задания, выполнение миссий или вступление по приглашению от существующих членов организации.
@@ -242,7 +118,7 @@
                 <div class="glass-card p-8 section-reveal" onclick="this.classList.toggle('active')">
                     <div class="faq-question">
                         <span>Какие правила для взаимодействия между игроками?</span>
-                        <span style="font-size: 20px;">+</span>
+                        <span class="faq-plus">+</span>
                     </div>
                     <div class="faq-answer">
                         Самая главная - не нарушать основные правила сервера такие как ликбезы и своды правил написанные в дискорде сервера. А так - не мешайте другим игрокам наслаждаться мероприятием.
@@ -252,7 +128,7 @@
                 <div class="glass-card p-8 section-reveal" onclick="this.classList.toggle('active')">
                     <div class="faq-question">
                         <span>Могу ли я создавать свои миссии?</span>
-                        <span style="font-size: 20px;">+</span>
+                        <span class="faq-plus">+</span>
                     </div>
                     <div class="faq-answer">
                         Да, вы можете создавать свои собственные миссии или события, но для этого необходимо согласовать их с организаторами мероприятия, чтобы они соответствовали общей тематике и правилам.
@@ -262,7 +138,7 @@
                 <div class="glass-card p-8 section-reveal" onclick="this.classList.toggle('active')">
                     <div class="faq-question">
                         <span>Как связаться с организаторами?</span>
-                        <span style="font-size: 20px;">+</span>
+                        <span class="faq-plus">+</span>
                     </div>
                     <div class="faq-answer">
                         Вы можете связаться через тикеты в системе поддержки или отправить личное сообщение используя команду /pm и так же через категорию чата "личные сообщение"
@@ -277,42 +153,6 @@
     </footer>
 
     <script src="script.js"></script>
-    <script>
-        const lenis = new Lenis({
-            duration: 1.2,
-            easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-        });
-        function raf(time) {
-            lenis.raf(time);
-            requestAnimationFrame(raf);
-        }
-        requestAnimationFrame(raf);
-
-        gsap.registerPlugin(ScrollTrigger);
-        gsap.from(".hero-reveal", {
-            y: 40,
-            opacity: 0,
-            duration: 1.2,
-            stagger: 0.2,
-            ease: "power3.out",
-            clearProps: "all"
-        });
-
-        gsap.utils.toArray('.section-reveal').forEach(el => {
-            gsap.to(el, {
-                scrollTrigger: {
-                    trigger: el,
-                    start: "top 90%",
-                    toggleActions: "play none none reverse"
-                },
-                y: 0,
-                opacity: 1,
-                duration: 0.8,
-                ease: "power2.out"
-            });
-        });
-
-        window.addEventListener('load', () => ScrollTrigger.refresh());
-    </script>
+    <script src="theme.js"></script>
 </body>
 </html>

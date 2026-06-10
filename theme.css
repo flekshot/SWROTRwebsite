@@ -1,0 +1,417 @@
+/* ============================================================
+   Coruscant Theme — Rise of the Republic
+   Общий стиль для всех страниц: золото + янтарь на тёмно-синем,
+   звёздное небо, сканлайны, силуэт Корусанта, трафик спидеров,
+   навигация с мобильным меню.
+   Декор-элементы (.scanlines, .coruscant-skyline, .speeder-traffic,
+   #starfield, мобильное меню) автоматически создаёт theme.js.
+   ============================================================ */
+
+:root {
+    --bg-dark: #0A0A1A;
+    --gold: #FFD700;
+    --amber: #FF8C00;
+    --green: #00ff88;
+    --red: #ff3860;
+    --text-main: #ffffff;
+    --nav-h: 64px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html.lenis, html.lenis body { height: auto; }
+
+body {
+    font-family: 'Space Grotesk', sans-serif;
+    background-color: var(--bg-dark);
+    color: var(--text-main);
+    overflow-x: hidden;
+    line-height: 1.4;
+    padding-top: var(--nav-h);
+}
+
+.font-syncopate { font-family: 'Syncopate', sans-serif; }
+.font-orbitron { font-family: 'Orbitron', sans-serif; }
+
+.gradient-text {
+    background: linear-gradient(90deg, var(--gold), var(--amber));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.glow-text {
+    text-shadow: 0 0 20px rgba(255, 215, 0, 0.5), 0 0 40px rgba(255, 140, 0, 0.3);
+}
+
+.hud-line {
+    height: 1px;
+    background: linear-gradient(90deg, var(--gold), transparent);
+}
+
+/* совместимость со старым классом логотипа */
+.animated-gradient {
+    background: linear-gradient(90deg, #FFD700, #FF8C00, #FFC72C, #FF8C00, #FFD700);
+    background-size: 300% 100%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: gradientShift 8s ease infinite;
+    font-family: 'Syncopate', sans-serif;
+    font-weight: bold;
+    letter-spacing: -0.02em;
+}
+
+@keyframes gradientShift {
+    0% { background-position: 0% center; }
+    50% { background-position: 100% center; }
+    100% { background-position: 0% center; }
+}
+
+/* ── Звёздное небо (canvas создаёт theme.js) ──────────────── */
+#starfield {
+    position: fixed;
+    inset: 0;
+    z-index: -3;
+    display: block;
+    pointer-events: none;
+}
+
+/* ── Силуэт Корусанта: башни + городское зарево ───────────── */
+.coruscant-skyline {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    height: 24vh;
+    min-height: 150px;
+    z-index: -2;
+    pointer-events: none;
+    background-image:
+        /* зарево города */
+        linear-gradient(to top, rgba(255, 140, 0, 0.13), rgba(255, 140, 0, 0.04) 40%, transparent 72%),
+        /* ближние башни (тёмные) */
+        linear-gradient(#05050F, #05050F),
+        linear-gradient(#05050F, #05050F),
+        linear-gradient(#05050F, #05050F),
+        linear-gradient(#05050F, #05050F),
+        linear-gradient(#05050F, #05050F),
+        linear-gradient(#05050F, #05050F),
+        /* дальние башни (чуть светлее) */
+        linear-gradient(#10102B, #10102B),
+        linear-gradient(#10102B, #10102B),
+        linear-gradient(#10102B, #10102B),
+        linear-gradient(#10102B, #10102B),
+        linear-gradient(#10102B, #10102B);
+    background-repeat: no-repeat;
+    background-position:
+        bottom,
+        4% bottom, 20% bottom, 38% bottom, 60% bottom, 83% bottom, 97% bottom,
+        0% bottom, 13% bottom, 30% bottom, 52% bottom, 76% bottom;
+    background-size:
+        100% 100%,
+        7% 78%, 5% 60%, 8% 92%, 6% 72%, 7% 86%, 5% 64%,
+        5% 52%, 4% 68%, 6% 46%, 5% 62%, 4% 50%;
+}
+
+/* мигающие маяки на башнях */
+.skyline-beacon {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--red);
+    box-shadow: 0 0 8px var(--red);
+    animation: beaconBlink 2.4s ease-in-out infinite;
+}
+
+.skyline-beacon.gold {
+    background: var(--gold);
+    box-shadow: 0 0 8px var(--gold);
+}
+
+.skyline-beacon.b1 { left: 41%; bottom: 90%; }
+.skyline-beacon.b2 { left: 86%; bottom: 84%; animation-delay: 0.8s; }
+.skyline-beacon.b3 { left: 6.5%; bottom: 76%; animation-delay: 1.5s; }
+
+@keyframes beaconBlink {
+    0%, 100% { opacity: 0.1; }
+    50% { opacity: 1; }
+}
+
+/* ── Трафик спидеров (световые потоки Корусанта) ──────────── */
+.speeder-traffic {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.speeder {
+    position: absolute;
+    left: 0;
+    height: 2px;
+    border-radius: 2px;
+    opacity: 0.45;
+    background: linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.7) 60%, #fff);
+    animation: speederFly linear infinite;
+}
+
+.speeder.rtl {
+    background: linear-gradient(270deg, transparent, rgba(255, 99, 71, 0.6) 60%, #fff);
+    animation-name: speederFlyBack;
+}
+
+.speeder.s1 { top: 16%; width: 110px; animation-duration: 7s; }
+.speeder.s2 { top: 24%; width: 70px;  animation-duration: 11s; animation-delay: 3s;   opacity: 0.32; }
+.speeder.s3 { top: 36%; width: 90px;  animation-duration: 9s;  animation-delay: 6s;   opacity: 0.4; }
+.speeder.s4 { top: 58%; width: 120px; animation-duration: 6.5s; animation-delay: 1.5s; opacity: 0.3; }
+.speeder.s5 { top: 70%; width: 80px;  animation-duration: 12s; animation-delay: 5s;   opacity: 0.25; }
+.speeder.s6 { top: 46%; width: 60px;  animation-duration: 14s; animation-delay: 8s;   opacity: 0.3; }
+
+@keyframes speederFly {
+    from { transform: translateX(-15vw); }
+    to   { transform: translateX(115vw); }
+}
+
+@keyframes speederFlyBack {
+    from { transform: translateX(115vw); }
+    to   { transform: translateX(-15vw); }
+}
+
+/* ── Сканлайны (CRT/голограмма) ───────────────────────────── */
+.scanlines {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+        0deg,
+        rgba(255, 215, 0, 0.02) 0px,
+        rgba(255, 215, 0, 0.02) 1px,
+        transparent 1px,
+        transparent 3px
+    );
+}
+
+.scan-beam {
+    position: fixed;
+    left: 0; right: 0;
+    top: -20%;
+    height: 90px;
+    z-index: 80;
+    pointer-events: none;
+    background: linear-gradient(180deg, transparent, rgba(255, 215, 0, 0.05), transparent);
+    animation: scanMove 10s linear infinite;
+}
+
+@keyframes scanMove {
+    from { top: -20%; }
+    to { top: 115%; }
+}
+
+/* ── Навигация ────────────────────────────────────────────── */
+.site-nav {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%;
+    height: var(--nav-h);
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    padding: 0 1.5rem;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.15);
+    backdrop-filter: blur(18px);
+    background: rgba(10, 10, 26, 0.78);
+}
+
+.nav-inner {
+    max-width: 80rem;
+    margin: 0 auto;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo {
+    font-family: 'Syncopate', sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--gold);
+    text-decoration: none;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+}
+
+.logo-mark {
+    display: inline-block;
+    margin-right: 0.6rem;
+    font-size: 1.3rem;
+    text-shadow: 0 0 14px rgba(255, 215, 0, 0.7);
+    animation: logoSpin 14s linear infinite;
+}
+
+@keyframes logoSpin { to { transform: rotate(360deg); } }
+
+.nav-links { display: flex; gap: 2.2rem; }
+
+.nav-link {
+    position: relative;
+    color: rgba(255, 255, 255, 0.65);
+    text-decoration: none;
+    font-size: 0.9rem;
+    padding: 0.4rem 0;
+    transition: color 0.3s ease;
+}
+
+.nav-link::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0; bottom: -3px;
+    height: 2px;
+    background: linear-gradient(90deg, var(--gold), var(--amber));
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.6);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s ease;
+}
+
+.nav-link:hover { color: var(--gold); }
+.nav-link:hover::after, .nav-link.active::after { transform: scaleX(1); }
+.nav-link.active { color: var(--gold); font-weight: 600; }
+
+.menu-toggle {
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    width: 42px;
+    height: 42px;
+    padding: 0 10px;
+    background: none;
+    border: 1px solid rgba(255, 215, 0, 0.35);
+    border-radius: 2px;
+    cursor: pointer;
+}
+
+.menu-toggle span {
+    width: 20px;
+    height: 2px;
+    background: var(--gold);
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.menu-toggle.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.menu-toggle.open span:nth-child(2) { opacity: 0; }
+.menu-toggle.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+.mobile-menu {
+    position: fixed;
+    top: var(--nav-h);
+    left: 0; right: 0;
+    z-index: 55;
+    background: rgba(10, 10, 26, 0.97);
+    border-bottom: 1px solid rgba(255, 215, 0, 0.15);
+    backdrop-filter: blur(18px);
+    display: flex;
+    flex-direction: column;
+    padding: 0.5rem 1.5rem 1.25rem;
+    transform: translateY(-130%);
+    transition: transform 0.35s cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+.mobile-menu.open { transform: translateY(0); }
+
+.mobile-menu a {
+    color: rgba(255, 255, 255, 0.75);
+    text-decoration: none;
+    padding: 0.9rem 0.25rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.12em;
+}
+
+.mobile-menu a.active { color: var(--gold); }
+
+@media (max-width: 767px) {
+    .nav-links { display: none; }
+    .menu-toggle { display: flex; }
+}
+
+/* ── Карточки (голографический стиль) ─────────────────────── */
+@keyframes holoFlicker {
+    0%, 100% { border-color: rgba(255, 215, 0, 0.16); }
+    46% { border-color: rgba(255, 215, 0, 0.28); }
+    48% { border-color: rgba(255, 215, 0, 0.1); }
+    50% { border-color: rgba(255, 215, 0, 0.3); }
+    54% { border-color: rgba(255, 215, 0, 0.2); }
+}
+
+.glass-card {
+    background: rgba(14, 14, 32, 0.6);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 215, 0, 0.16);
+    border-radius: 3px;
+    transition: all 0.6s cubic-bezier(0.19, 1, 0.22, 1);
+    animation: holoFlicker 4s infinite;
+}
+
+.glass-card:hover {
+    border-color: var(--gold);
+    background: rgba(18, 18, 40, 0.8);
+    box-shadow: 0 20px 40px rgba(255, 215, 0, 0.1);
+}
+
+/* ── Reveal-анимации (GSAP подхватывает классы) ───────────── */
+.section-reveal {
+    opacity: 0;
+    transform: translateY(30px);
+}
+
+/* ── Футер ────────────────────────────────────────────────── */
+.site-footer {
+    position: fixed;
+    left: 50%;
+    bottom: 24px;
+    transform: translateX(-50%);
+    z-index: 1200;
+    pointer-events: none;
+}
+
+.footer-credit {
+    display: inline-block;
+    color: rgba(255, 215, 0, 0.65);
+    font-size: 12px;
+    padding: 8px 16px;
+    border: 1px solid rgba(255, 215, 0, 0.25);
+    border-radius: 4px;
+    background: rgba(10, 10, 26, 0.85);
+    backdrop-filter: blur(10px);
+    letter-spacing: 1px;
+    font-weight: 500;
+}
+
+/* ── Прочее ───────────────────────────────────────────────── */
+h1, h2, h3, h4, h5, h6, p, span, a, div {
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+}
+
+img, svg {
+    pointer-events: none;
+    user-select: none;
+}
+
+@media (hover: none) {
+    .glass-card:hover { transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .speeder, .scan-beam, .skyline-beacon, .logo-mark { animation: none; }
+}
