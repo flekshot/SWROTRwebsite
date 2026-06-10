@@ -1155,6 +1155,10 @@
                 MissionService.lockMission(id, playerId).then((res) => {
                     if (res.success) {
                         showToast('Миссия принята. Удачи, солдат!', 'success');
+                    } else if (res.reason === 'already-has-mission') {
+                        showToast(res.busyTitle
+                            ? `У тебя уже есть миссия: «${res.busyTitle}». Сначала заверши её`
+                            : 'У тебя уже есть активная миссия — сначала заверши её', 'error');
                     } else if (res.reason === 'locked-by-other') {
                         showToast('Миссию уже занял другой игрок', 'error');
                     } else if (res.reason === 'wrong-status') {

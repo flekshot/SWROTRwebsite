@@ -45,16 +45,14 @@
       </div>
     </header>
 
-    <!-- Ожидают подтверждения GM -->
-    <section class="glass p-6 shadow-xl border-l-4 border-yellow-400/60">
-      <div class="flex items-center justify-between mb-4">
+    <!-- Контроль миссий (GM) -->
+    <section id="mission-control" class="glass p-6 shadow-xl border-l-4 border-yellow-400/60 space-y-6">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <h2 class="text-xl font-semibold flex items-center gap-2">
-          <span class="gold">⏳</span> Ожидают подтверждения
-          <span id="pending-count" class="font-orbitron text-xs bg-yellow-500/15 gold px-2 py-1 rounded">0</span>
+          <span class="gold">🎯</span> Контроль миссий
         </h2>
         <p class="text-xs text-slate-400">Отчёты игроков о выполненных миссиях</p>
       </div>
-      <div id="pending-list" class="space-y-3"></div>
     </section>
 
     <!-- Территории города -->
@@ -168,14 +166,40 @@
       const resetBtn = document.getElementById('reset-missions');
       const cancelBtn = document.getElementById('cancel-edit');
       const listEl = document.getElementById('mission-list');
+      const controlEl = document.getElementById('mission-control');
       const pendingEl = document.getElementById('pending-list');
+      const activeEl = document.getElementById('active-list');
+      const doneEl = document.getElementById('done-list');
       const pendingCountEl = document.getElementById('pending-count');
+      const activeCountEl = document.getElementById('active-count');
+      const doneCountEl = document.getElementById('done-count');
+      const statsEl = document.getElementById('mission-stats');
+      const filterInput = document.getElementById('player-filter');
       const logsEl = document.getElementById('system-logs');
       const clearLogsBtn = document.getElementById('clear-logs');
       const connEl = document.getElementById('conn-state');
 
       let editingId = null;
       let missions = [];
+      let playerFilter = '';
+
+      const fmtAgo = (ts) => {
+        if (!ts) return '';
+        const mins = Math.floor((Date.now() - ts) / 60000);
+        if (mins < 1) return 'только что';
+        if (mins < 60) return `${mins} мин назад`;
+        const h = Math.floor(mins / 60);
+        return `${h} ч ${mins % 60} мин назад`;
+      };
+
+      const isExpired = (m) => m.status === 'locked' && m.lockedAt &&
+        (Date.now() - m.lockedAt) > MissionService.LOCK_EXPIRE_MS;
+
+      const matchesFilter = (m) => {
+        if (!playerFilter) return true;
+        const q = playerFilter.toLowerCase();
+        return (m.lockedBy || '').toLowerCase().includes(q) || (m.title || '').toLowerCase().includes(q);
+      };
 
       const formFields = {
         title: document.getElementById('title'),

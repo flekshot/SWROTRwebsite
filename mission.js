@@ -226,16 +226,56 @@
         });
       },
 
+      // Транзакция по всему списку миссий: атомарно проверяем, что у
+      // игрока нет другой активной миссии (правило "1 Game ID = 1 миссия"),
+      // и что миссия свободна. Гонки двух вкладок/игроков исключены.
       lockMission(id, playerId) {
         if (!playerId) return Promise.resolve({ success: false, reason: 'missing-player' });
+        return new Promise((resolve) => {
+          let failReason = null;
+          let busyTitle = null;
+          missionsRef.transaction((all) => {
+            failReason = null;
+            busyTitle = null;
+            if (all === null) return all; // первый прогон без данных — Firebase перезапустит
+            const m = all[id];
+            if (!m) { failReason = 'not-found'; return; }
+            if (m.status === 'locked' && m.lockedBy === playerId) return all; // уже твоя
+            if (m.status !== 'available') {
+              failReason = m.status === 'locked' ? 'locked-by-other' : 'wrong-status';
+              return;
+            }
+            const activeId = Object.keys(all).find((k) =>
+              all[k] && all[k].status === 'locked' && all[k].lockedBy === playerId);
+            if (activeId) {
+              failReason = 'already-has-mission';
+              busyTitle = all[activeId].title || '';
+              return;
+            }
+            return {
+              ...all,
+              [id]: { ...m, status: 'locked', lockedBy: playerId, lockedAt: Date.now(), notes: null, completedAt: null }
+            };
+          }, (error, committed, snapshot) => {
+            if (error) return resolve({ success: false, reason: 'error' });
+            if (!committed) return resolve({ success: false, reason: failReason || 'conflict', busyTitle });
+            const val = snapshot && snapshot.val();
+            const m = val && val[id];
+            if (!m) return resolve({ success: false, reason: 'not-found' });
+            if (m.lockedBy !== playerId) return resolve({ success: false, reason: 'locked-by-other' });
+            logAction('MISSION_LOCK', `Миссия "${m.title}" занята игроком ${playerId}`);
+            resolve({ success: true, mission: normalize(id, m) });
+          });
+        });
+      },
+
+      // GM засчитывает миссию напрямую (проверил выполнение в игре)
+      forceCompleteMission(id) {
         return runTx(id, (m) => {
-          if (m.status === 'locked' && m.lockedBy === playerId) return m; // уже твоя
-          if (m.status !== 'available') {
-            return { __fail: m.status === 'locked' ? 'locked-by-other' : 'wrong-status' };
-          }
-          return { ...m, status: 'locked', lockedBy: playerId, lockedAt: Date.now(), notes: null, completedAt: null };
+          if (m.status !== 'locked' && m.status !== 'pending') return { __fail: 'wrong-status' };
+          return { ...m, status: 'completed', completedAt: m.completedAt || Date.now() };
         }).then((res) => {
-          if (res.success) logAction('MISSION_LOCK', `Миссия "${res.mission.title}" занята игроком ${playerId}`);
+          if (res.success) logAction('MISSION_APPROVE', `GM засчитал миссию "${res.mission.title}" (игрок ${res.mission.lockedBy})`);
           return res;
         });
       },
@@ -419,8 +459,23 @@
         if (!m) return fail('not-found');
         if (m.status === 'locked' && m.lockedBy === playerId) return Promise.resolve({ success: true, mission: clone(m) });
         if (m.status !== 'available') return fail(m.status === 'locked' ? 'locked-by-other' : 'wrong-status');
+        // правило "1 Game ID = 1 активная миссия"
+        const activeId = Object.keys(map).find((k) =>
+          k !== id && map[k].status === 'locked' && map[k].lockedBy === playerId);
+        if (activeId) {
+          return Promise.resolve({ success: false, reason: 'already-has-mission', busyTitle: map[activeId].title || '' });
+        }
         Object.assign(m, { status: 'locked', lockedBy: playerId, lockedAt: Date.now(), notes: '', completedAt: null });
         return commit(m, 'MISSION_LOCK', `Миссия "${m.title}" занята игроком ${playerId}`);
+      },
+
+      forceCompleteMission(id) {
+        const m = map[id];
+        if (!m) return fail('not-found');
+        if (m.status !== 'locked' && m.status !== 'pending') return fail('wrong-status');
+        m.status = 'completed';
+        if (!m.completedAt) m.completedAt = Date.now();
+        return commit(m, 'MISSION_APPROVE', `GM засчитал миссию "${m.title}" (игрок ${m.lockedBy})`);
       },
 
       releaseMission(id, playerId) {
@@ -545,6 +600,7 @@
     completeMission: (id, playerId, notes) => backend.completeMission(id, playerId, notes),
     approveMission: (id) => backend.approveMission(id),
     rejectMission: (id) => backend.rejectMission(id),
+    forceCompleteMission: (id) => backend.forceCompleteMission(id),
     addMission: (data) => backend.addMission(data),
     updateMission: (id, updates) => backend.updateMission(id, updates),
     removeMission: (id) => backend.removeMission(id),
