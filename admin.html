@@ -57,6 +57,17 @@
       <div id="pending-list" class="space-y-3"></div>
     </section>
 
+    <!-- Территории города -->
+    <section class="glass p-6 shadow-xl">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl font-semibold flex items-center gap-2">
+          <span class="gold">🗺️</span> Территории города
+        </h2>
+        <p class="text-xs text-slate-400">Смена владельца мгновенно перекрашивает карту у всех игроков</p>
+      </div>
+      <div id="territory-list" class="grid md:grid-cols-2 gap-3"></div>
+    </section>
+
     <!-- Создание / редактирование -->
     <section class="glass p-6 shadow-xl">
       <form id="mission-form" class="space-y-4">
@@ -339,6 +350,46 @@
               MissionService.clearLogs();
           }
       });
+
+      // ── Территории города ──
+      const terrEl = document.getElementById('territory-list');
+      if (window.TerritoryService && terrEl) {
+        const F = TerritoryService.FACTIONS;
+
+        const renderTerritories = (data) => {
+          terrEl.innerHTML = Object.entries(data).map(([id, t]) => {
+            const f = F[t.owner] || { name: t.owner, color: '#8a93ad', emblem: '⚪' };
+            const opts = Object.entries(F).map(([fid, fx]) =>
+              `<option value="${fid}" ${t.owner === fid ? 'selected' : ''}>${fx.emblem} ${fx.name}</option>`
+            ).join('');
+            return `
+              <div class="px-4 py-3 bg-black/30 border border-white/10 rounded-md">
+                <p class="text-sm font-semibold mb-2 flex items-center justify-between">
+                  <span>${esc(t.name)}</span>
+                  <span class="font-orbitron text-[9px] tracking-[0.2em] text-slate-500">КАРТА ${t.map}</span>
+                </p>
+                <p class="text-xs mb-2" style="color:${f.color}">${f.emblem} ${esc(f.name)} · ${t.status === 'contested' ? '⚠ оспаривается' : 'контролируется'}</p>
+                <div class="flex gap-2 flex-wrap">
+                  <select data-terr-owner="${id}" class="flex-1 min-w-[140px] bg-black/40 border border-white/10 rounded-md px-2 py-2 text-sm">${opts}</select>
+                  <select data-terr-status="${id}" class="bg-black/40 border border-white/10 rounded-md px-2 py-2 text-sm">
+                    <option value="controlled" ${t.status !== 'contested' ? 'selected' : ''}>Контролируется</option>
+                    <option value="contested" ${t.status === 'contested' ? 'selected' : ''}>Оспаривается</option>
+                  </select>
+                </div>
+              </div>
+            `;
+          }).join('');
+        };
+
+        terrEl.addEventListener('change', (e) => {
+          const ownerId = e.target.getAttribute('data-terr-owner');
+          const statusId = e.target.getAttribute('data-terr-status');
+          if (ownerId) TerritoryService.setTerritory(ownerId, { owner: e.target.value });
+          if (statusId) TerritoryService.setTerritory(statusId, { status: e.target.value });
+        });
+
+        TerritoryService.subscribe(renderTerritories);
+      }
 
       // ── Реалтайм-подписки: всё обновляется без перезагрузки ──
       MissionService.subscribe((list) => {

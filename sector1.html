@@ -11,8 +11,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Syncopate:wght@400;700&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Firebase (территории синхронизируются через TerritoryService в mission.js) -->
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
     <link rel="stylesheet" href="theme.css">
     <style>
+        /* ── Голо-рамка карты ─────────────────────────────── */
+        .holo-frame { position: relative; }
+
         .holo-map {
             width: 100%;
             height: 600px;
@@ -22,9 +28,304 @@
             box-shadow: 0 0 30px rgba(255, 215, 0, 0.06);
         }
 
-        /* леафлет-попапы в голо-стиле */
-        .leaflet-popup-content-wrapper, .leaflet-popup-tip {
-            background: rgba(10, 10, 26, 0.95);
+        @media (max-width: 640px) {
+            .holo-map { height: 420px; }
+        }
+
+        .holo-map .leaflet-image-layer {
+            filter: saturate(0.85) contrast(1.08);
+        }
+
+        /* сетка координат + виньетка + HUD-уголки поверх карты */
+        .holo-overlay {
+            position: absolute;
+            inset: 0;
+            z-index: 800;
+            pointer-events: none;
+            border-radius: 8px;
+            background-image:
+                linear-gradient(rgba(255, 215, 0, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 215, 0, 0.03) 1px, transparent 1px);
+            background-size: 60px 60px;
+            box-shadow: inset 0 0 90px rgba(5, 5, 15, 0.85);
+        }
+
+        .holo-overlay::before, .holo-overlay::after {
+            content: '';
+            position: absolute;
+            width: 26px;
+            height: 26px;
+            border: 2px solid rgba(255, 215, 0, 0.6);
+        }
+
+        .holo-overlay::before { top: 10px; left: 10px; border-right: none; border-bottom: none; }
+        .holo-overlay::after { bottom: 10px; right: 10px; border-left: none; border-top: none; }
+
+        /* ── Зоны: бегущие границы + пульс оспариваемых ───── */
+        .zone-path {
+            stroke-dasharray: 10 6;
+            animation: dashMove 1.6s linear infinite;
+        }
+
+        .zone-contested {
+            animation: dashMove 0.8s linear infinite, contestedPulse 1.8s ease-in-out infinite;
+        }
+
+        @keyframes dashMove {
+            to { stroke-dashoffset: -32; }
+        }
+
+        @keyframes contestedPulse {
+            0%, 100% { fill-opacity: 0.08; }
+            50% { fill-opacity: 0.3; }
+        }
+
+        /* подписи зон прямо на карте */
+        .leaflet-tooltip.zone-label {
+            background: rgba(10, 10, 26, 0.85);
+            border: 1px solid rgba(255, 215, 0, 0.35);
+            color: #fff;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 10px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            padding: 3px 8px;
+            border-radius: 2px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+            white-space: nowrap;
+        }
+
+        .leaflet-tooltip.zone-label::before { display: none; }
+        .leaflet-tooltip.zone-label:empty { display: none; }
+
+        /* ── Легенда с фильтрами ──────────────────────────── */
+        .map-legend {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.6rem;
+            margin-bottom: 1rem;
+        }
+
+        .legend-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.62rem;
+            letter-spacing: 0.2em;
+            color: rgba(255, 215, 0, 0.7);
+            text-transform: uppercase;
+            margin-right: 0.4rem;
+        }
+
+        .legend-chip {
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+            padding: 0.5rem 0.85rem;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 2px;
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.45);
+            cursor: pointer;
+            transition: all 0.25s ease;
+            user-select: none;
+        }
+
+        .legend-chip input { display: none; }
+
+        .legend-chip .lg-dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            opacity: 0.35;
+            transition: opacity 0.25s ease;
+        }
+
+        .legend-chip:has(input:checked) {
+            border-color: rgba(255, 215, 0, 0.5);
+            color: #fff;
+            background: rgba(255, 215, 0, 0.06);
+        }
+
+        .legend-chip:has(input:checked) .lg-dot { opacity: 1; box-shadow: 0 0 8px currentColor; }
+
+        /* ── Панель зоны (клик по территории) ─────────────── */
+        .zone-panel {
+            position: fixed;
+            top: calc(var(--nav-h) + 16px);
+            right: -440px;
+            width: 380px;
+            max-width: calc(100vw - 2rem);
+            max-height: calc(100vh - var(--nav-h) - 32px);
+            overflow-y: auto;
+            z-index: 70;
+            background: rgba(12, 12, 30, 0.96);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            border-radius: 3px;
+            backdrop-filter: blur(16px);
+            transition: right 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+        }
+
+        .zone-panel.open { right: 16px; }
+
+        @media (max-width: 640px) {
+            .zone-panel {
+                top: auto;
+                right: 1rem;
+                left: 1rem;
+                width: auto;
+                bottom: -120%;
+                max-height: 70vh;
+                transition: bottom 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+            }
+            .zone-panel.open { bottom: 1rem; right: 1rem; }
+        }
+
+        .zp-close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 2;
+            width: 38px;
+            height: 38px;
+            background: rgba(10, 10, 26, 0.8);
+            border: 1px solid rgba(255, 215, 0, 0.35);
+            color: var(--gold);
+            font-size: 1.3rem;
+            cursor: pointer;
+            border-radius: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .zp-close:hover { box-shadow: 0 0 12px rgba(255, 215, 0, 0.4); transform: rotate(90deg); }
+
+        .zp-img-wrap { position: relative; }
+
+        .zp-img-wrap img {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .zp-img-wrap::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, rgba(12, 12, 30, 0.95), transparent 55%);
+        }
+
+        .zp-body { padding: 1.2rem 1.4rem 1.4rem; }
+
+        .zp-owner {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.68rem;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+        }
+
+        .zp-name {
+            font-size: 1.1rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #fff;
+            margin-bottom: 0.6rem;
+            letter-spacing: -0.01em;
+        }
+
+        .zp-desc {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.88rem;
+            line-height: 1.55;
+            margin-bottom: 1rem;
+        }
+
+        .zp-status {
+            display: inline-block;
+            font-size: 0.62rem;
+            font-weight: 700;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            padding: 0.45rem 0.8rem;
+            border: 1px solid;
+            border-radius: 2px;
+        }
+
+        .zp-status.controlled { color: var(--green); border-color: rgba(0, 255, 136, 0.4); background: rgba(0, 255, 136, 0.06); }
+        .zp-status.contested { color: var(--amber); border-color: rgba(255, 140, 0, 0.45); background: rgba(255, 140, 0, 0.07); animation: contestedBadge 1.6s ease-in-out infinite; }
+
+        @keyframes contestedBadge {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.55; }
+        }
+
+        /* ── Развед-карточки скриншотов ───────────────────── */
+        .recon-card {
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(255, 215, 0, 0.18);
+            border-radius: 3px;
+            background: #0E0E20;
+            cursor: pointer;
+            transition: transform 0.35s cubic-bezier(0.2, 1, 0.3, 1), border-color 0.35s ease;
+        }
+
+        .recon-card:hover { transform: translateY(-4px); border-color: rgba(255, 215, 0, 0.55); }
+
+        .recon-card img {
+            width: 100%;
+            height: 12rem;
+            object-fit: cover;
+            display: block;
+            transition: transform 0.5s ease;
+        }
+
+        .recon-card:hover img { transform: scale(1.06); }
+
+        .recon-card::before, .recon-card::after {
+            content: '';
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255, 215, 0, 0.7);
+            z-index: 2;
+        }
+
+        .recon-card::before { top: 10px; left: 10px; border-right: none; border-bottom: none; }
+        .recon-card::after { top: 10px; right: 10px; border-left: none; border-bottom: none; }
+
+        .recon-overlay {
+            position: absolute;
+            left: 0; right: 0; bottom: 0;
+            padding: 2rem 1rem 0.8rem;
+            background: linear-gradient(to top, rgba(5, 5, 15, 0.95), transparent);
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            z-index: 1;
+        }
+
+        .recon-name {
+            font-family: 'Syncopate', sans-serif;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: #fff;
+        }
+
+        .recon-owner {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.6rem;
+            letter-spacing: 0.12em;
+        }
+
+        @media (hover: none) {
+            .recon-card:hover { transform: none; }
+            .recon-card:hover img { transform: none; }
         }
     </style>
 </head>
@@ -56,11 +357,11 @@
                     <div class="space-y-12">
                         <div>
                             <span class="text-yellow-400 font-bold tracking-[0.4em] uppercase text-[9px] mb-4 block">// Карта и Маршруты · Корусант</span>
-                            <p class="text-lg text-neutral-400 leading-relaxed opacity-80">
-                                Исследуйте всю карту города. Каждый район имеет свои особенности и возможности.
+                            <p class="text-lg text-neutral-300 leading-relaxed">
+                                Исследуйте всю карту города. Кликни по зоне — увидишь владельца, статус и разведснимок территории.
                             </p>
                         </div>
-                        <a href="#map" class="bg-yellow-400 text-black py-5 px-10 text-[11px] font-bold tracking-[0.3em] uppercase hover:bg-white transition-all w-fit inline-block">
+                        <a href="#map-anchor" class="bg-yellow-400 text-black py-5 px-10 text-[11px] font-bold tracking-[0.3em] uppercase hover:bg-white transition-all w-fit inline-block">
                             Открыть Карту
                         </a>
                     </div>
@@ -82,149 +383,293 @@
         <div class="max-w-7xl mx-auto">
             <div class="glass-card p-12 mb-16 section-reveal">
                 <h2 class="font-syncopate text-3xl font-bold mb-6 text-yellow-400">О Корусанте</h2>
-                <p class="text-neutral-400 leading-relaxed">
+                <p class="text-neutral-300 leading-relaxed">
                     Корусант — величественная планета-город, расположенная в сердце галактики. Тысячелетиями он был политическим центром, где принимались самые важные решения. Исследуйте её секторы и найдите свой путь в этом огромном городе.
                 </p>
             </div>
 
-            <div id="map" class="holo-map mb-16 section-reveal"></div>
+            <!-- Легенда / фильтры территорий -->
+            <div id="map-anchor" class="map-legend section-reveal">
+                <span class="legend-title">Фильтр территорий:</span>
+                <label class="legend-chip"><input type="checkbox" checked data-type="gang"><span class="lg-dot" style="background:#ff5544; color:#ff5544;"></span>Банды</label>
+                <label class="legend-chip"><input type="checkbox" checked data-type="gov"><span class="lg-dot" style="background:#4da6ff; color:#4da6ff;"></span>Госструктуры</label>
+                <label class="legend-chip"><input type="checkbox" checked data-type="trade"><span class="lg-dot" style="background:#FFD700; color:#FFD700;"></span>Торговля</label>
+                <label class="legend-chip"><input type="checkbox" checked data-type="neutral"><span class="lg-dot" style="background:#8a93ad; color:#8a93ad;"></span>Нейтральные</label>
+            </div>
+
+            <div class="holo-frame mb-16 section-reveal">
+                <div id="map" class="holo-map"></div>
+                <div class="holo-overlay"></div>
+            </div>
 
             <div class="mb-20 section-reveal">
-                <h2 class="font-syncopate text-3xl font-bold text-yellow-400 mb-12">Визуальные примеры зон - Сектор 1</h2>
+                <h2 class="font-syncopate text-3xl font-bold text-yellow-400 mb-12">Разведснимки зон — Сектор 1</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <div class="glass-card overflow-hidden">
-                        <div class="text-orange-400 text-xs font-bold tracking-widest mb-2 px-8 pt-6">🟠 ЗОНА ПОРТА</div>
-                        <img src="images/port_zone.png" alt="Зона Порта" class="w-full h-48 object-cover">
+                    <div class="recon-card" data-zone="port">
+                        <img src="images/port_zone.png" alt="Зона Порта">
+                        <div class="recon-overlay">
+                            <span class="recon-name">Зона Порта</span>
+                            <span class="recon-owner" data-owner-of="port"></span>
+                        </div>
                     </div>
-                    <div class="glass-card overflow-hidden">
-                        <div class="text-purple-400 text-xs font-bold tracking-widest mb-2 px-8 pt-6">🟣 ИНДУСТРИАЛЬНАЯ ЗОНА</div>
-                        <img src="images/industrial_zone.png" alt="Индустриальная Зона" class="w-full h-48 object-cover">
+                    <div class="recon-card" data-zone="industrial">
+                        <img src="images/industrial_zone.png" alt="Индустриальная Зона">
+                        <div class="recon-overlay">
+                            <span class="recon-name">Индустриальная Зона</span>
+                            <span class="recon-owner" data-owner-of="industrial"></span>
+                        </div>
                     </div>
-                    <div class="glass-card overflow-hidden">
-                        <div class="text-yellow-400 text-xs font-bold tracking-widest mb-2 px-8 pt-6">🟡 МАГИСТРАЛЬНЫЙ ПУТЬ</div>
-                        <img src="images/zone_port.png" alt="Магистральный путь" class="w-full h-48 object-cover">
+                    <div class="recon-card" data-zone="highway">
+                        <img src="images/zone_port.png" alt="Магистральный Путь">
+                        <div class="recon-overlay">
+                            <span class="recon-name">Магистральный Путь</span>
+                            <span class="recon-owner" data-owner-of="highway"></span>
+                        </div>
                     </div>
-                    <div class="glass-card overflow-hidden">
-                        <div class="text-red-400 text-xs font-bold tracking-widest mb-2 px-8 pt-6">🔴 ПОЛИЦЕЙСКИЙ ДЕПАРТАМЕНТ</div>
-                        <img src="images/police_zone.png" alt="Полицейский Департамент" class="w-full h-48 object-cover">
+                    <div class="recon-card" data-zone="police">
+                        <img src="images/police_zone.png" alt="Полицейский Департамент">
+                        <div class="recon-overlay">
+                            <span class="recon-name">Полицейский Департамент</span>
+                            <span class="recon-owner" data-owner-of="police"></span>
+                        </div>
                     </div>
-                    <div class="glass-card overflow-hidden">
-                        <div class="text-green-400 text-xs font-bold tracking-widest mb-2 px-8 pt-6">🟢 ЦЕНТРАЛЬНЫЙ БАНК</div>
-                        <img src="images/bank_zone.png" alt="Центральный Банк" class="w-full h-48 object-cover">
+                    <div class="recon-card" data-zone="bank">
+                        <img src="images/bank_zone.png" alt="Центральный Банк">
+                        <div class="recon-overlay">
+                            <span class="recon-name">Центральный Банк</span>
+                            <span class="recon-owner" data-owner-of="bank"></span>
+                        </div>
                     </div>
-                    <div class="glass-card overflow-hidden">
-                        <div class="text-white text-xs font-bold tracking-widest mb-2 px-8 pt-6">⚪ СВОБОДНЫЙ СЕКТОР</div>
-                        <img src="images/free_sector.png" alt="Свободный сектор" class="w-full h-48 object-cover">
+                    <div class="recon-card" data-zone="free">
+                        <img src="images/free_sector.png" alt="Свободный Сектор">
+                        <div class="recon-overlay">
+                            <span class="recon-name">Свободный Сектор</span>
+                            <span class="recon-owner" data-owner-of="free"></span>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <div class="mb-16 section-reveal">
                 <h2 class="font-syncopate text-3xl font-bold text-yellow-400 mb-4">Второй Сектор</h2>
-                <p class="text-neutral-400">Промышленные районы и засекреченные зоны</p>
+                <p class="text-neutral-300">Промышленные районы и засекреченные зоны</p>
             </div>
 
-            <div id="map2" class="holo-map mb-16 section-reveal"></div>
+            <div class="holo-frame mb-16 section-reveal">
+                <div id="map2" class="holo-map"></div>
+                <div class="holo-overlay"></div>
+            </div>
 
             <div class="mb-20 section-reveal">
-                <h2 class="font-syncopate text-3xl font-bold text-yellow-400 mb-12">Визуальные примеры зон - Сектор 2</h2>
+                <h2 class="font-syncopate text-3xl font-bold text-yellow-400 mb-12">Разведснимки зон — Сектор 2</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <div class="glass-card overflow-hidden">
-                        <div class="text-orange-400 text-xs font-bold tracking-widest mb-2 px-8 pt-6">🛒 БАРАХОЛКА</div>
-                        <img src="images/baraholka.png" alt="Барахолка" class="w-full h-48 object-cover">
+                    <div class="recon-card" data-zone="baraholka">
+                        <img src="images/baraholka.png" alt="Барахолка">
+                        <div class="recon-overlay">
+                            <span class="recon-name">Барахолка</span>
+                            <span class="recon-owner" data-owner-of="baraholka"></span>
+                        </div>
                     </div>
-                    <div class="glass-card overflow-hidden">
-                        <div class="text-purple-400 text-xs font-bold tracking-widest mb-2 px-8 pt-6">🔀 РАЗВИЛКА</div>
-                        <img src="images/razvilka.png" alt="Развилка" class="w-full h-48 object-cover">
+                    <div class="recon-card">
+                        <img src="images/razvilka.png" alt="Развилка">
+                        <div class="recon-overlay">
+                            <span class="recon-name">Развилка</span>
+                        </div>
                     </div>
-                    <div class="glass-card overflow-hidden">
-                        <div class="text-green-400 text-xs font-bold tracking-widest mb-2 px-8 pt-6">📋 ТАМОЖНЯ</div>
-                        <img src="images/customs.png" alt="Таможня" class="w-full h-48 object-cover">
+                    <div class="recon-card" data-zone="customs">
+                        <img src="images/customs.png" alt="Таможня">
+                        <div class="recon-overlay">
+                            <span class="recon-name">Таможня</span>
+                            <span class="recon-owner" data-owner-of="customs"></span>
+                        </div>
                     </div>
-                    <div class="glass-card overflow-hidden">
-                        <div class="text-yellow-400 text-xs font-bold tracking-widest mb-2 px-8 pt-6">🏛️ ТЕРМИНАЛ</div>
-                        <img src="images/terminal.png" alt="Терминал" class="w-full h-48 object-cover">
+                    <div class="recon-card" data-zone="terminal">
+                        <img src="images/terminal.png" alt="Терминал">
+                        <div class="recon-overlay">
+                            <span class="recon-name">Терминал</span>
+                            <span class="recon-owner" data-owner-of="terminal"></span>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </section>
 
+    <!-- Панель зоны -->
+    <div id="zone-panel" class="zone-panel">
+        <button id="zp-close" class="zp-close">×</button>
+        <div id="zp-img-wrap" class="zp-img-wrap"><img id="zp-img" src="" alt=""></div>
+        <div class="zp-body">
+            <div id="zp-owner" class="zp-owner"></div>
+            <h3 id="zp-name" class="zp-name font-syncopate"></h3>
+            <p id="zp-desc" class="zp-desc"></p>
+            <span id="zp-status" class="zp-status font-orbitron"></span>
+        </div>
+    </div>
+
     <footer class="site-footer">
         <div class="footer-credit">Rise of the Republic™ • Городской Ивент</div>
     </footer>
 
     <script src="script.js"></script>
+    <script src="mission.js"></script>
     <script src="theme.js"></script>
     <script>
-        var map = L.map('map', {
-            crs: L.CRS.Simple,
-            minZoom: -1,
-            maxZoom: 2
-        });
+        // ── Геометрия зон, описания и снимки (статика страницы) ──
+        // владельцы и статусы приходят из TerritoryService (Firebase/локально)
+        const ZONES = {
+            port:       { map: 1, coords: [[750, 100], [950, 100], [950, 700], [750, 700]],   desc: 'Главный логистический узел города. Сюда прибывают все грузы сектора.', img: 'images/port_zone.png' },
+            industrial: { map: 1, coords: [[700, 750], [950, 750], [950, 1200], [700, 1200]], desc: 'Заводы и производство. Шумно, грязно и всегда есть работа.', img: 'images/industrial_zone.png' },
+            highway:    { map: 1, coords: [[300, 200], [600, 200], [600, 800], [300, 800]],   desc: 'Основная трасса сектора. Контроль над ней — контроль над логистикой.', img: 'images/zone_port.png' },
+            police:     { map: 1, coords: [[450, 850], [600, 850], [600, 1200], [450, 1200]], desc: 'Центральный штаб правопорядка. Лучше не появляться здесь с контрабандой.', img: 'images/police_zone.png' },
+            bank:       { map: 1, coords: [[350, 1400], [550, 1400], [550, 1700], [350, 1700]], desc: 'Финансовое сердце сектора. Здесь крутятся все кредиты города.', img: 'images/bank_zone.png' },
+            free:       { map: 1, coords: [[100, 1000], [300, 1000], [300, 1300], [100, 1300]], desc: 'Территория для освоения. Кто первый закрепится — того и сектор.', img: 'images/free_sector.png' },
+            baraholka:  { map: 2, coords: [[400, 150], [700, 150], [700, 700], [400, 700]],   desc: 'Место торговли и обмена. Найдётся всё — вопрос только в цене.', img: 'images/baraholka.png' },
+            club:       { map: 2, coords: [[750, 200], [950, 200], [950, 700], [750, 700]],   desc: 'Самый большой клуб города. Нейтральная земля для переговоров... обычно.', img: null },
+            customs:    { map: 2, coords: [[300, 750], [600, 750], [600, 1200], [300, 1200]], desc: 'Здесь проверяются грузы и товары. Очереди и досмотры — часть жизни.', img: 'images/customs.png' },
+            terminal:   { map: 2, coords: [[50, 750], [300, 750], [300, 1100], [50, 1100]],   desc: 'Транспортный узел для торговцев и фракций.', img: 'images/terminal.png' }
+        };
 
-        var bounds = [[0, 0], [1000, 2000]];
-        var image = L.imageOverlay('images/map_coruscant_1.png', bounds).addTo(map);
+        const FACTIONS = window.TerritoryService ? TerritoryService.FACTIONS : {};
+        const NEUTRAL = { name: 'Нейтральная', type: 'neutral', color: '#8a93ad', emblem: '⚪' };
+
+        // ── Карты ──
+        const map = L.map('map', { crs: L.CRS.Simple, minZoom: -1, maxZoom: 2 });
+        const bounds = [[0, 0], [1000, 2000]];
+        L.imageOverlay('images/map_coruscant_1.png', bounds).addTo(map);
         map.fitBounds(bounds);
         map.setMaxBounds(bounds);
 
-        function addZone(coords, color, name, description) {
-            var zone = L.polygon(coords, {
-                color: color,
-                fillColor: color,
-                fillOpacity: 0.2,
-                weight: 3
-            }).addTo(map);
-
-            var popupContent = `<div style="background: #0A0A1A; color: #fff; padding: 10px; border: 1px solid ${color}; border-radius: 5px;"><h3 style="margin: 0 0 10px 0; color: ${color};">${name}</h3><p style="margin: 0; font-size: 0.9rem; color: #ccc;">${description}</p></div>`;
-            zone.bindPopup(popupContent);
-            zone.on('mouseover', function () { this.setStyle({ fillOpacity: 0.5, weight: 5 }); });
-            zone.on('mouseout', function () { this.setStyle({ fillOpacity: 0.2, weight: 3 }); });
-        }
-
-        var spawnIcon = L.divIcon({
-            html: '<div style="background-color: #FFD700; width: 15px; height: 15px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 10px #FFD700;"></div>',
-            iconSize: [15, 15],
-        });
-
-        L.marker([440, 650], {icon: spawnIcon}).addTo(map);
-        addZone([[750, 100], [950, 100], [950, 700], [750, 700]], "#ffa500", "Зона Порта", "Главный логистический узел");
-        addZone([[700, 750], [950, 750], [950, 1200], [700, 1200]], "#bf00ff", "Индустриальная Зона", "Заводы и производство");
-        addZone([[300, 200], [600, 200], [600, 800], [300, 800]], "#FFD700", "Магистральный путь", "Основная трасса");
-        addZone([[450, 850], [600, 850], [600, 1200], [450, 1200]], "#ff0000", "Полицейский Департамент", "Центральный штаб");
-        addZone([[350, 1400], [550, 1400], [550, 1700], [350, 1700]], "#00ff00", "Центральный Банк", "Финансовое сердце");
-        addZone([[100, 1000], [300, 1000], [300, 1300], [100, 1300]], "#ffffff", "Свободный сектор", "Территория для освоения");
-
-        // ВТОРАЯ КАРТА
-        var map2 = L.map('map2', {
-            crs: L.CRS.Simple,
-            minZoom: -1,
-            maxZoom: 2
-        });
-
-        var bounds2 = [[0, 0], [1000, 1500]];
-        var image2 = L.imageOverlay('images/map_coruscant_2.png', bounds2).addTo(map2);
+        const map2 = L.map('map2', { crs: L.CRS.Simple, minZoom: -1, maxZoom: 2 });
+        const bounds2 = [[0, 0], [1000, 1500]];
+        L.imageOverlay('images/map_coruscant_2.png', bounds2).addTo(map2);
         map2.fitBounds(bounds2);
         map2.setMaxBounds(bounds2);
 
-        function addZone2(coords, color, name, description) {
-            var zone = L.polygon(coords, {
-                color: color,
-                fillColor: color,
-                fillOpacity: 0.2,
-                weight: 3
-            }).addTo(map2);
+        const mapFor = (z) => z.map === 1 ? map : map2;
 
-            var popupContent = `<div style="background: #0A0A1A; color: #fff; padding: 10px; border: 1px solid ${color}; border-radius: 5px;"><h3 style="margin: 0 0 10px 0; color: ${color};">${name}</h3><p style="margin: 0; font-size: 0.9rem; color: #ccc;">${description}</p></div>`;
-            zone.bindPopup(popupContent);
-            zone.on('mouseover', function () { this.setStyle({ fillOpacity: 0.5, weight: 5 }); });
-            zone.on('mouseout', function () { this.setStyle({ fillOpacity: 0.2, weight: 3 }); });
+        // точка спавна
+        const spawnIcon = L.divIcon({
+            html: '<div style="background-color: #FFD700; width: 15px; height: 15px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 10px #FFD700;"></div>',
+            iconSize: [15, 15],
+        });
+        L.marker([440, 650], { icon: spawnIcon }).addTo(map).bindTooltip('Точка спавна', { direction: 'top' });
+
+        // ── Полигоны зон ──
+        const polys = {};
+        let territories = window.TerritoryService ? TerritoryService.getAll() : {};
+
+        const factionOf = (t) => (t && FACTIONS[t.owner]) || NEUTRAL;
+        const fillFor = (t) => t && t.status === 'contested' ? 0.12 : 0.2;
+
+        Object.entries(ZONES).forEach(([id, z]) => {
+            const poly = L.polygon(z.coords, {
+                color: NEUTRAL.color,
+                fillColor: NEUTRAL.color,
+                fillOpacity: 0.15,
+                weight: 2,
+                className: 'zone-path'
+            }).addTo(mapFor(z));
+
+            poly.bindTooltip('', { permanent: true, direction: 'center', className: 'zone-label' });
+            poly.on('click', () => openPanel(id));
+            poly.on('mouseover', function () { this.setStyle({ fillOpacity: 0.42, weight: 3 }); });
+            poly.on('mouseout', function () { this.setStyle({ fillOpacity: fillFor(territories[id]), weight: 2 }); });
+            polys[id] = poly;
+        });
+
+        // ── Панель зоны ──
+        const panel = document.getElementById('zone-panel');
+        const zpImgWrap = document.getElementById('zp-img-wrap');
+        const zpImg = document.getElementById('zp-img');
+        const zpOwner = document.getElementById('zp-owner');
+        const zpName = document.getElementById('zp-name');
+        const zpDesc = document.getElementById('zp-desc');
+        const zpStatus = document.getElementById('zp-status');
+        let openZoneId = null;
+
+        function fillPanel(id) {
+            const z = ZONES[id];
+            const t = territories[id] || {};
+            const f = factionOf(t);
+            if (z.img) {
+                zpImg.src = z.img;
+                zpImg.alt = t.name || '';
+                zpImgWrap.style.display = '';
+            } else {
+                zpImgWrap.style.display = 'none';
+            }
+            zpOwner.textContent = `${f.emblem} ${f.name}`;
+            zpOwner.style.color = f.color;
+            zpName.textContent = t.name || id;
+            zpDesc.textContent = z.desc;
+            const contested = t.status === 'contested';
+            zpStatus.textContent = contested ? '⚠ Оспаривается' : '● Контролируется';
+            zpStatus.className = 'zp-status font-orbitron ' + (contested ? 'contested' : 'controlled');
         }
 
-        addZone2([[400, 150], [700, 150], [700, 700], [400, 700]], "#FFD700", "Барахолка", "Место торговли и обмена");
-        addZone2([[750, 200], [950, 200], [950, 700], [750, 700]], "#20B2AA", "Клуб Из семи Залуп", "Самый большой клуб города");
-        addZone2([[300, 750], [600, 750], [600, 1200], [300, 1200]], "#FF6347", "Таможня", "Здесь проверяются грузы и товары");
-        addZone2([[50, 750], [300, 750], [300, 1100], [50, 1100]], "#1E90FF", "Терминал", "Транспортный узел для Торговцев и фракций");
+        function openPanel(id) {
+            openZoneId = id;
+            fillPanel(id);
+            panel.classList.add('open');
+        }
+
+        document.getElementById('zp-close').addEventListener('click', () => {
+            panel.classList.remove('open');
+            openZoneId = null;
+        });
+
+        // клик по развед-карточке тоже открывает панель
+        document.querySelectorAll('.recon-card[data-zone]').forEach((card) => {
+            card.addEventListener('click', () => openPanel(card.dataset.zone));
+        });
+
+        // ── Фильтры легенды ──
+        function applyFilters() {
+            const enabled = new Set(
+                [...document.querySelectorAll('.legend-chip input:checked')].map((i) => i.dataset.type)
+            );
+            Object.entries(polys).forEach(([id, poly]) => {
+                const f = factionOf(territories[id]);
+                const m = mapFor(ZONES[id]);
+                if (enabled.has(f.type)) {
+                    if (!m.hasLayer(poly)) poly.addTo(m);
+                } else if (m.hasLayer(poly)) {
+                    m.removeLayer(poly);
+                }
+            });
+        }
+
+        document.querySelectorAll('.legend-chip input').forEach((input) => {
+            input.addEventListener('change', applyFilters);
+        });
+
+        // ── Применение данных территорий (реалтайм) ──
+        function applyTerritories(data) {
+            territories = data;
+            Object.entries(polys).forEach(([id, poly]) => {
+                const t = data[id];
+                if (!t) return;
+                const f = factionOf(t);
+                poly.setStyle({ color: f.color, fillColor: f.color, fillOpacity: fillFor(t) });
+                const el = poly.getElement();
+                if (el) el.classList.toggle('zone-contested', t.status === 'contested');
+                poly.setTooltipContent(`${f.emblem} ${t.name}${t.status === 'contested' ? ' ⚠' : ''}`);
+            });
+            document.querySelectorAll('[data-owner-of]').forEach((span) => {
+                const t = data[span.dataset.ownerOf];
+                if (!t) return;
+                const f = factionOf(t);
+                span.textContent = `${f.emblem} ${f.name}${t.status === 'contested' ? ' · оспаривается' : ''}`;
+                span.style.color = f.color;
+            });
+            applyFilters();
+            if (openZoneId) fillPanel(openZoneId);
+        }
+
+        if (window.TerritoryService) {
+            TerritoryService.subscribe(applyTerritories);
+        }
     </script>
 </body>
 </html>

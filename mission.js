@@ -32,6 +32,7 @@
   const LOCK_EXPIRE_MS = 60 * 60 * 1000; // 60 минут до статуса "ПРОСРОЧЕНО"
   const STORAGE_KEY = 'cs_missions_v2';
   const LOG_KEY = 'cs_mission_logs_v1';
+  const TERR_KEY = 'cs_territories_v1';
   const MAX_LOGS = 50;
 
   const defaultMissions = {
@@ -61,15 +62,40 @@
     }
   };
 
+  // ── Фракции для карты территорий (добавляй новые здесь) ────
+  // type: 'gang' | 'gov' | 'trade' | 'neutral' — используется фильтрами на карте
+  const FACTIONS = {
+    neutral: { name: 'Нейтральная',       type: 'neutral', color: '#8a93ad', emblem: '⚪' },
+    pdc:     { name: 'Police Department', type: 'gov',     color: '#4da6ff', emblem: '🛡️' },
+    bounty:  { name: 'Bounty Hunters',    type: 'gang',    color: '#ff5544', emblem: '💀' },
+    traders: { name: 'Торговая Гильдия',  type: 'trade',   color: '#FFD700', emblem: '💰' }
+  };
+
+  // ── Территории города (владельцев меняет GM из admin.html) ─
+  const defaultTerritories = {
+    port:       { name: 'Зона Порта',              map: 1, owner: 'traders', status: 'controlled' },
+    industrial: { name: 'Индустриальная Зона',     map: 1, owner: 'neutral', status: 'controlled' },
+    highway:    { name: 'Магистральный Путь',      map: 1, owner: 'neutral', status: 'controlled' },
+    police:     { name: 'Полицейский Департамент', map: 1, owner: 'pdc',     status: 'controlled' },
+    bank:       { name: 'Центральный Банк',        map: 1, owner: 'pdc',     status: 'controlled' },
+    free:       { name: 'Свободный Сектор',        map: 1, owner: 'neutral', status: 'contested' },
+    baraholka:  { name: 'Барахолка',               map: 2, owner: 'traders', status: 'controlled' },
+    club:       { name: 'Клуб Из Семи Залуп',      map: 2, owner: 'bounty',  status: 'controlled' },
+    customs:    { name: 'Таможня',                 map: 2, owner: 'pdc',     status: 'controlled' },
+    terminal:   { name: 'Терминал',                map: 2, owner: 'traders', status: 'controlled' }
+  };
+
   // ───────────────────────── Общее состояние ─────────────────
 
   let cache = [];          // актуальный список миссий (массив)
   let logsCache = [];      // последние записи журнала
+  let terrCache = {};      // территории карты (id -> {name, map, owner, status})
   let connState = 'offline'; // 'online' | 'offline' | 'local'
 
   const missionSubs = [];
   const connSubs = [];
   const logSubs = [];
+  const terrSubs = [];
 
   const clone = (value) => JSON.parse(JSON.stringify(value));
 
@@ -79,6 +105,19 @@
   const notifyLogs = () => logSubs.forEach((fn) => {
     try { fn(clone(logsCache)); } catch (err) { console.error('Log subscriber error', err); }
   });
+  const notifyTerr = () => terrSubs.forEach((fn) => {
+    try { fn(clone(terrCache)); } catch (err) { console.error('Territory subscriber error', err); }
+  });
+
+  // дополняем сохранённые территории дефолтами — новые зоны из кода
+  // появятся даже если в базе лежит старый набор
+  const mergeTerritories = (val) => {
+    const out = {};
+    Object.keys(defaultTerritories).forEach((id) => {
+      out[id] = { ...defaultTerritories[id], ...((val && val[id]) || {}) };
+    });
+    return out;
+  };
   const setConn = (state) => {
     connState = state;
     connSubs.forEach((fn) => {
@@ -133,6 +172,18 @@
       notifyLogs();
     });
 
+    const territoriesRef = db.ref('territories');
+    territoriesRef.on('value', (snap) => {
+      const val = snap.val();
+      if (!val) {
+        // первая инициализация — заливаем стартовую расстановку
+        territoriesRef.set(clone(defaultTerritories));
+        return;
+      }
+      terrCache = mergeTerritories(val);
+      notifyTerr();
+    });
+
     db.ref('.info/connected').on('value', (snap) => {
       setConn(snap.val() ? 'online' : 'offline');
     });
@@ -169,6 +220,17 @@
       mode: 'firebase',
       logAction,
       clearLogs: () => logsRef.remove(),
+
+      setTerritory(id, updates) {
+        const safe = {};
+        ['owner', 'status'].forEach((k) => { if (updates[k] !== undefined) safe[k] = updates[k]; });
+        return territoriesRef.child(id).update(safe).then(() => {
+          const t = terrCache[id] || defaultTerritories[id] || { name: id };
+          const f = FACTIONS[safe.owner];
+          logAction('TERRITORY_UPDATE', `Территория "${t.name}": ${safe.owner ? 'владелец → ' + (f ? f.name : safe.owner) : ''}${safe.status ? ' статус → ' + (safe.status === 'contested' ? 'оспаривается' : 'контролируется') : ''}`);
+          return { success: true };
+        });
+      },
 
       lockMission(id, playerId) {
         if (!playerId) return Promise.resolve({ success: false, reason: 'missing-player' });
@@ -291,17 +353,28 @@
     };
     const saveLogs = (l) => localStorage.setItem(LOG_KEY, JSON.stringify(l));
 
+    const loadTerr = () => {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(TERR_KEY));
+        return parsed && typeof parsed === 'object' ? parsed : null;
+      } catch (err) { return null; }
+    };
+    const saveTerr = (t) => localStorage.setItem(TERR_KEY, JSON.stringify(t));
+
     let map = loadMap();
     if (!map) { map = clone(defaultMissions); saveMap(map); }
     let logs = loadLogs();
+    let terrMap = loadTerr() || clone(defaultTerritories);
 
     const sync = () => { cache = toList(map); notifyMissions(); };
     const syncLogs = () => { logsCache = clone(logs); notifyLogs(); };
+    const syncTerr = () => { terrCache = mergeTerritories(terrMap); notifyTerr(); };
 
     // синхронизация между вкладками одного браузера
     window.addEventListener('storage', (e) => {
       if (e.key === STORAGE_KEY) { map = loadMap() || {}; sync(); }
       if (e.key === LOG_KEY) { logs = loadLogs(); syncLogs(); }
+      if (e.key === TERR_KEY) { terrMap = loadTerr() || {}; syncTerr(); }
     });
 
     const logAction = (action, details) => {
@@ -326,12 +399,25 @@
 
     cache = toList(map);
     logsCache = clone(logs);
+    terrCache = mergeTerritories(terrMap);
     connState = 'local';
 
     return {
       mode: 'local',
       logAction,
       clearLogs: () => { logs = []; saveLogs(logs); syncLogs(); return Promise.resolve({ success: true }); },
+
+      setTerritory(id, updates) {
+        if (!defaultTerritories[id]) return fail('not-found');
+        if (!terrMap[id]) terrMap[id] = clone(defaultTerritories[id]);
+        ['owner', 'status'].forEach((k) => { if (updates[k] !== undefined) terrMap[id][k] = updates[k]; });
+        saveTerr(terrMap);
+        syncTerr();
+        const t = terrCache[id];
+        const f = FACTIONS[t.owner];
+        logAction('TERRITORY_UPDATE', `Территория "${t.name}": владелец → ${f ? f.name : t.owner}, статус → ${t.status === 'contested' ? 'оспаривается' : 'контролируется'}`);
+        return Promise.resolve({ success: true });
+      },
 
       lockMission(id, playerId) {
         if (!playerId) return fail('missing-player');
@@ -471,5 +557,13 @@
     reset: () => backend.reset(),
     logAction: (action, details) => backend.logAction(action, details),
     clearLogs: () => backend.clearLogs()
+  };
+
+  // ── Сервис территорий (карта города, sector1.html + admin.html) ──
+  window.TerritoryService = {
+    FACTIONS: clone(FACTIONS),
+    getAll: () => clone(terrCache),
+    subscribe(fn) { terrSubs.push(fn); fn(clone(terrCache)); return unsubscriber(terrSubs, fn); },
+    setTerritory: (id, updates) => backend.setTerritory(id, updates)
   };
 })();
