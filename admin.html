@@ -51,7 +51,31 @@
         <h2 class="text-xl font-semibold flex items-center gap-2">
           <span class="gold">🎯</span> Контроль миссий
         </h2>
-        <p class="text-xs text-slate-400">Отчёты игроков о выполненных миссиях</p>
+        <span id="mission-stats" class="font-orbitron text-[10px] tracking-[0.15em] text-slate-400"></span>
+      </div>
+
+      <input id="player-filter" type="search" placeholder="Фильтр по Game ID или названию миссии..."
+             class="w-full bg-black/40 border border-white/10 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-yellow-400 transition">
+
+      <div>
+        <h3 class="text-xs font-semibold uppercase tracking-[0.2em] text-yellow-400 mb-3 flex items-center gap-2">
+          ⏳ На проверке <span id="pending-count" class="font-orbitron text-xs bg-yellow-500/15 gold px-2 py-0.5 rounded">0</span>
+        </h3>
+        <div id="pending-list" class="space-y-3"></div>
+      </div>
+
+      <div>
+        <h3 class="text-xs font-semibold uppercase tracking-[0.2em] text-red-400 mb-3 flex items-center gap-2">
+          ⚔ В работе <span id="active-count" class="font-orbitron text-xs bg-red-500/15 text-red-300 px-2 py-0.5 rounded">0</span>
+        </h3>
+        <div id="active-list" class="space-y-3"></div>
+      </div>
+
+      <div>
+        <h3 class="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-400 mb-3 flex items-center gap-2">
+          ✅ Выполненные <span id="done-count" class="font-orbitron text-xs bg-emerald-500/15 text-emerald-300 px-2 py-0.5 rounded">0</span>
+        </h3>
+        <div id="done-list" class="space-y-3"></div>
       </div>
     </section>
 
@@ -226,30 +250,61 @@
         completed: 'text-slate-400'
       }[m.status] || 'text-slate-400');
 
-      // ── Очередь на подтверждение ──
-      const renderPending = () => {
-        const pending = missions.filter((m) => m.status === 'pending');
+      // ── Пульт контроля миссий ──
+      const playerChip = (m) => `<span class="font-orbitron gold">${esc(m.lockedBy || '—')}</span>`;
+      const emptyMsg = (text) => `<p class="text-slate-600 italic text-sm py-2">${text}</p>`;
+
+      const renderControl = () => {
+        const pending = missions.filter((m) => m.status === 'pending' && matchesFilter(m));
+        const active = missions.filter((m) => m.status === 'locked' && matchesFilter(m));
+        const done = missions.filter((m) => m.status === 'completed' && matchesFilter(m));
+        const avail = missions.filter((m) => m.status === 'available').length;
+        const expiredCount = active.filter(isExpired).length;
+
+        statsEl.textContent = `${avail} СВОБОДНО · ${active.length} В РАБОТЕ${expiredCount ? ` (${expiredCount} ПРОСРОЧЕНО)` : ''} · ${pending.length} НА ПРОВЕРКЕ · ${done.length} ВЫПОЛНЕНО`;
         pendingCountEl.textContent = pending.length;
-        if (!pending.length) {
-          pendingEl.innerHTML = '<p class="text-slate-600 italic text-center py-4">Нет миссий на проверке</p>';
-          return;
-        }
-        pendingEl.innerHTML = pending.map((m) => `
+        activeCountEl.textContent = active.length;
+        doneCountEl.textContent = done.length;
+
+        pendingEl.innerHTML = !pending.length ? emptyMsg('Нет отчётов на проверке') : pending.map((m) => `
           <div class="px-4 py-3 bg-black/30 border border-yellow-500/30 rounded-md space-y-2">
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-2">
               <div>
-                <h3 class="text-lg font-semibold">${esc(m.title)}</h3>
-                <p class="text-xs text-slate-400">
-                  Игрок: <span class="font-orbitron gold">${esc(m.lockedBy || '—')}</span>
-                  ${m.completedAt ? ` · отправлено ${new Date(m.completedAt).toLocaleString('ru-RU')}` : ''}
-                </p>
+                <h4 class="text-lg font-semibold">${esc(m.title)}</h4>
+                <p class="text-xs text-slate-400">Игрок: ${playerChip(m)}${m.completedAt ? ` · отправлено ${fmtAgo(m.completedAt)}` : ''}</p>
               </div>
               <div class="flex gap-2 shrink-0">
-                <button data-approve="${esc(m.id)}" class="px-3 py-2 text-sm border border-emerald-500/60 text-emerald-300 rounded-md hover:bg-emerald-500/10">Одобрить</button>
-                <button data-reject="${esc(m.id)}" class="px-3 py-2 text-sm border border-red-500/60 text-red-300 rounded-md hover:bg-red-500/10">Отклонить</button>
+                <button data-approve="${esc(m.id)}" class="px-4 py-2 text-sm font-semibold bg-emerald-500/15 border border-emerald-500/60 text-emerald-300 rounded-md hover:bg-emerald-500/30 transition">✓ Одобрить</button>
+                <button data-reject="${esc(m.id)}" class="px-4 py-2 text-sm border border-red-500/60 text-red-300 rounded-md hover:bg-red-500/10 transition">✕ Отклонить</button>
               </div>
             </div>
             ${m.notes ? `<blockquote class="text-sm text-slate-300 border-l-2 border-yellow-500/40 pl-3 italic">${esc(m.notes)}</blockquote>` : '<p class="text-xs text-slate-600 italic">Отчёт не заполнен</p>'}
+          </div>
+        `).join('');
+
+        activeEl.innerHTML = !active.length ? emptyMsg('Никто не выполняет миссии') : active.map((m) => {
+          const expired = isExpired(m);
+          return `
+            <div class="px-4 py-3 bg-black/30 border ${expired ? 'border-amber-500/50' : 'border-white/10'} rounded-md flex flex-col md:flex-row md:items-center justify-between gap-2">
+              <div>
+                <h4 class="text-lg font-semibold">${esc(m.title)}</h4>
+                <p class="text-xs text-slate-400">Игрок: ${playerChip(m)} · взята ${fmtAgo(m.lockedAt)}${expired ? ' <span class="text-amber-400 font-bold">· ⚠ ПРОСРОЧЕНО</span>' : ''}</p>
+              </div>
+              <div class="flex gap-2 shrink-0">
+                <button data-force-complete="${esc(m.id)}" class="px-3 py-2 text-sm border border-emerald-500/60 text-emerald-300 rounded-md hover:bg-emerald-500/10 transition">✓ Засчитать</button>
+                <button data-free="${esc(m.id)}" class="px-3 py-2 text-sm border border-amber-500/50 text-amber-300 rounded-md hover:bg-amber-500/10 transition">Освободить</button>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        doneEl.innerHTML = !done.length ? emptyMsg('Пока нет выполненных миссий') : done.map((m) => `
+          <div class="px-4 py-3 bg-black/30 border border-white/10 rounded-md flex flex-col md:flex-row md:items-center justify-between gap-2 opacity-80">
+            <div>
+              <h4 class="text-base font-semibold">${esc(m.title)}</h4>
+              <p class="text-xs text-slate-400">Выполнил: ${playerChip(m)}${m.completedAt ? ` · ${fmtAgo(m.completedAt)}` : ''}</p>
+            </div>
+            <button data-return="${esc(m.id)}" class="px-3 py-2 text-sm border border-white/20 rounded-md hover:border-yellow-400 transition shrink-0">↻ Вернуть на доску</button>
           </div>
         `).join('');
       };
@@ -303,7 +358,7 @@
       };
 
       const render = () => {
-        renderPending();
+        renderControl();
         renderList();
       };
 
@@ -329,14 +384,34 @@
 
       cancelBtn.addEventListener('click', clearForm);
 
-      pendingEl.addEventListener('click', (event) => {
+      controlEl.addEventListener('click', (event) => {
         const approveId = event.target.getAttribute('data-approve');
         const rejectId = event.target.getAttribute('data-reject');
+        const forceId = event.target.getAttribute('data-force-complete');
+        const freeId = event.target.getAttribute('data-free');
+        const returnId = event.target.getAttribute('data-return');
         if (approveId) MissionService.approveMission(approveId);
         if (rejectId && confirm('Отклонить отчёт и вернуть миссию на доску?')) {
           MissionService.rejectMission(rejectId);
         }
+        if (forceId && confirm('Засчитать миссию как выполненную?')) {
+          MissionService.forceCompleteMission(forceId);
+        }
+        if (freeId && confirm('Снять миссию с игрока и вернуть на доску?')) {
+          MissionService.releaseMission(freeId, null);
+        }
+        if (returnId) MissionService.releaseMission(returnId, null);
       });
+
+      filterInput.addEventListener('input', () => {
+        playerFilter = filterInput.value.trim();
+        renderControl();
+      });
+
+      // обновление таймеров "взята X мин назад" и статусов ПРОСРОЧЕНО
+      setInterval(() => {
+        if (missions.some((m) => m.status === 'locked' || m.status === 'pending')) renderControl();
+      }, 30000);
 
       listEl.addEventListener('click', (event) => {
         const editId = event.target.getAttribute('data-edit');

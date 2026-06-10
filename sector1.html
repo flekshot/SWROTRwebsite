@@ -98,6 +98,24 @@
         .leaflet-tooltip.zone-label::before { display: none; }
         .leaflet-tooltip.zone-label:empty { display: none; }
 
+        /* эмблема владельца в центре зоны */
+        .zone-emblem { background: transparent; border: none; }
+
+        .zone-emblem .ze-badge {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+            background: rgba(8, 8, 20, 0.78);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.6);
+            pointer-events: none;
+            transition: border-color 0.4s ease, box-shadow 0.4s ease;
+        }
+
         /* ── Легенда с фильтрами ──────────────────────────── */
         .map-legend {
             display: flex;
@@ -394,6 +412,7 @@
                 <label class="legend-chip"><input type="checkbox" checked data-type="gang"><span class="lg-dot" style="background:#ff5544; color:#ff5544;"></span>Банды</label>
                 <label class="legend-chip"><input type="checkbox" checked data-type="gov"><span class="lg-dot" style="background:#4da6ff; color:#4da6ff;"></span>Госструктуры</label>
                 <label class="legend-chip"><input type="checkbox" checked data-type="trade"><span class="lg-dot" style="background:#FFD700; color:#FFD700;"></span>Торговля</label>
+                <label class="legend-chip"><input type="checkbox" checked data-type="merc"><span class="lg-dot" style="background:#a86bff; color:#a86bff;"></span>Наёмники</label>
                 <label class="legend-chip"><input type="checkbox" checked data-type="neutral"><span class="lg-dot" style="background:#8a93ad; color:#8a93ad;"></span>Нейтральные</label>
             </div>
 
@@ -527,7 +546,8 @@
             baraholka:  { map: 2, coords: [[400, 150], [700, 150], [700, 700], [400, 700]],   desc: 'Место торговли и обмена. Найдётся всё — вопрос только в цене.', img: 'images/baraholka.png' },
             club:       { map: 2, coords: [[750, 200], [950, 200], [950, 700], [750, 700]],   desc: 'Самый большой клуб города. Нейтральная земля для переговоров... обычно.', img: null },
             customs:    { map: 2, coords: [[300, 750], [600, 750], [600, 1200], [300, 1200]], desc: 'Здесь проверяются грузы и товары. Очереди и досмотры — часть жизни.', img: 'images/customs.png' },
-            terminal:   { map: 2, coords: [[50, 750], [300, 750], [300, 1100], [50, 1100]],   desc: 'Транспортный узел для торговцев и фракций.', img: 'images/terminal.png' }
+            terminal:   { map: 2, coords: [[50, 750], [300, 750], [300, 1100], [50, 1100]],   desc: 'Транспортный узел для торговцев и фракций.', img: 'images/terminal.png' },
+            skupshik:   { map: 2, coords: [[80, 560], [260, 560], [260, 740], [80, 740]],     desc: 'Небольшая лавка скупщика у терминала. Принимает любой товар без лишних вопросов.', img: null }
         };
 
         const FACTIONS = window.TerritoryService ? TerritoryService.FACTIONS : {};
@@ -557,10 +577,20 @@
 
         // ── Полигоны зон ──
         const polys = {};
+        const emblems = {};
         let territories = window.TerritoryService ? TerritoryService.getAll() : {};
 
         const factionOf = (t) => (t && FACTIONS[t.owner]) || NEUTRAL;
-        const fillFor = (t) => t && t.status === 'contested' ? 0.12 : 0.2;
+        const fillFor = (t) => {
+            if (t && t.status === 'contested') return 0.12;
+            return factionOf(t).type === 'neutral' ? 0.14 : 0.22;
+        };
+        const emblemIcon = (f) => L.divIcon({
+            className: 'zone-emblem',
+            html: `<div class="ze-badge" style="border-color:${f.color}; box-shadow:0 0 12px ${f.color};">${f.emblem}</div>`,
+            iconSize: [34, 34],
+            iconAnchor: [17, 40]
+        });
 
         Object.entries(ZONES).forEach(([id, z]) => {
             const poly = L.polygon(z.coords, {
@@ -576,6 +606,12 @@
             poly.on('mouseover', function () { this.setStyle({ fillOpacity: 0.42, weight: 3 }); });
             poly.on('mouseout', function () { this.setStyle({ fillOpacity: fillFor(territories[id]), weight: 2 }); });
             polys[id] = poly;
+
+            emblems[id] = L.marker(poly.getBounds().getCenter(), {
+                icon: emblemIcon(NEUTRAL),
+                interactive: false,
+                keyboard: false
+            }).addTo(mapFor(z));
         });
 
         // ── Панель зоны ──
@@ -632,10 +668,13 @@
             Object.entries(polys).forEach(([id, poly]) => {
                 const f = factionOf(territories[id]);
                 const m = mapFor(ZONES[id]);
+                const em = emblems[id];
                 if (enabled.has(f.type)) {
                     if (!m.hasLayer(poly)) poly.addTo(m);
-                } else if (m.hasLayer(poly)) {
-                    m.removeLayer(poly);
+                    if (!m.hasLayer(em)) em.addTo(m);
+                } else {
+                    if (m.hasLayer(poly)) m.removeLayer(poly);
+                    if (m.hasLayer(em)) m.removeLayer(em);
                 }
             });
         }
@@ -653,8 +692,15 @@
                 const f = factionOf(t);
                 poly.setStyle({ color: f.color, fillColor: f.color, fillOpacity: fillFor(t) });
                 const el = poly.getElement();
-                if (el) el.classList.toggle('zone-contested', t.status === 'contested');
+                if (el) {
+                    el.classList.toggle('zone-contested', t.status === 'contested');
+                    el.style.filter = `drop-shadow(0 0 7px ${f.color})`;
+                }
                 poly.setTooltipContent(`${f.emblem} ${t.name}${t.status === 'contested' ? ' ⚠' : ''}`);
+                const tip = poly.getTooltip();
+                const tipEl = tip && tip.getElement();
+                if (tipEl) tipEl.style.borderColor = f.color;
+                emblems[id].setIcon(emblemIcon(f));
             });
             document.querySelectorAll('[data-owner-of]').forEach((span) => {
                 const t = data[span.dataset.ownerOf];

@@ -62,7 +62,9 @@
     neutral: { name: 'Нейтральная',       type: 'neutral', color: '#8a93ad', emblem: '⚪' },
     pdc:     { name: 'Police Department', type: 'gov',     color: '#4da6ff', emblem: '🛡️' },
     bounty:  { name: 'Bounty Hunters',    type: 'gang',    color: '#ff5544', emblem: '💀' },
-    traders: { name: 'Торговая Гильдия',  type: 'trade',   color: '#FFD700', emblem: '💰' }
+    traders: { name: 'Торговая Гильдия',  type: 'trade',   color: '#FFD700', emblem: '💰' },
+    mercs:   { name: 'Независимые Наёмники', type: 'merc', color: '#a86bff', emblem: '⚔️' },
+    family:  { name: 'Семья Trehkorochkin',  type: 'gang', color: '#ff4d9d', emblem: '🎩' }
   };
 
   // ── Территории города (владельцев меняет GM из admin.html) ─
@@ -76,7 +78,8 @@
     baraholka:  { name: 'Барахолка',               map: 2, owner: 'traders', status: 'controlled' },
     club:       { name: 'Клуб Из Семи Залуп',      map: 2, owner: 'bounty',  status: 'controlled' },
     customs:    { name: 'Таможня',                 map: 2, owner: 'pdc',     status: 'controlled' },
-    terminal:   { name: 'Терминал',                map: 2, owner: 'traders', status: 'controlled' }
+    terminal:   { name: 'Терминал',                map: 2, owner: 'traders', status: 'controlled' },
+    skupshik:   { name: 'Скупщик',                 map: 2, owner: 'neutral', status: 'controlled' }
   };
 
   // ───────────────────────── Общее состояние ─────────────────
