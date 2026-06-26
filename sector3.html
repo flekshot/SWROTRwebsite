@@ -33,6 +33,212 @@
             position: relative;
             z-index: 1;
         }
+
+        /* ── Keyframes для JS-частиц ─────────────────────────── */
+        @keyframes fireRise {
+            0%   { transform: translateX(-50%) translateY(0)      scale(1);   opacity: 0.9; }
+            100% { transform: translateX(-50%) translateY(-110px) scale(0.2); opacity: 0; }
+        }
+        @keyframes emberFloat {
+            0%   { transform: translateX(0)           translateY(0)    scale(1);   opacity: 1; }
+            100% { transform: translateX(var(--dx,0)) translateY(-90px) scale(0.1); opacity: 0; }
+        }
+        @keyframes bloodDrip {
+            0%   { height: 0;   opacity: 0.9; }
+            70%  { opacity: 0.7; }
+            100% { height: 55px; opacity: 0; }
+        }
+        @keyframes sparkFlash {
+            0%   { transform: scale(1);   opacity: 1; }
+            40%  { transform: scale(2.5); }
+            100% { transform: scale(0.1); opacity: 0; }
+        }
+        @keyframes dustRise {
+            0%   { transform: translateX(0)             translateY(0)    scale(1);   opacity: 0.9; }
+            100% { transform: translateX(var(--dx,8px)) translateY(-80px) scale(0.2); opacity: 0; }
+        }
+        @keyframes frostFall {
+            0%   { transform: translateX(0)             translateY(0)    scale(1);   opacity: 0.85; }
+            100% { transform: translateX(var(--dx,0px)) translateY(100px) scale(0.3); opacity: 0; }
+        }
+
+        /* ── Bounty Hunters: огненная аура ───────────────────── */
+        @keyframes fireBorderFx {
+            0%, 17%, 23%, 56%, 100% { box-shadow: 0 0 20px rgba(255,90,0,0.25); border-color: rgba(255,110,0,0.4); }
+            19%, 21% { box-shadow: 0 0 50px rgba(255,130,0,0.75); border-color: rgba(255,170,0,0.9); }
+            20%, 58% { box-shadow: 0 0 4px  rgba(255,90,0,0.05);  border-color: rgba(255,90,0,0.08); }
+        }
+        .card-bounty { animation: fireBorderFx 5s infinite; }
+        .card-bounty::before {
+            content: ''; position: absolute;
+            bottom: 0; left: 0; right: 0; height: 55%;
+            background:
+                radial-gradient(ellipse 70% 55% at 30% 100%, rgba(255,50,0,0.32)  0%, transparent 65%),
+                radial-gradient(ellipse 60% 45% at 70% 100%, rgba(255,120,0,0.26) 0%, transparent 65%),
+                radial-gradient(ellipse 45% 65% at 50% 100%, rgba(255,75,0,0.2)   0%, transparent 72%);
+            filter: blur(14px);
+            animation: fireBaseFx 1.1s ease-in-out infinite alternate;
+            z-index: 0; pointer-events: none;
+        }
+        @keyframes fireBaseFx {
+            0%   { opacity: 0.7; transform: scaleX(0.96) scaleY(1); }
+            100% { opacity: 1;   transform: scaleX(1.04) scaleY(1.12); }
+        }
+
+        /* ── Police Department: световые конусы + мигалки ────── */
+        @keyframes policeBorderFx {
+            0%,  44% { box-shadow: -10px 0 35px rgba(255,30,50,0.38), 10px 0 8px rgba(30,80,255,0.08); border-color: rgba(255,60,60,0.55); }
+            45%, 55% { box-shadow: none; border-color: rgba(180,180,255,0.12); }
+            56%, 100% { box-shadow: -10px 0 8px rgba(255,30,50,0.08), 10px 0 35px rgba(30,80,255,0.38); border-color: rgba(60,110,255,0.55); }
+        }
+        @keyframes policeConeFx {
+            0%,  44% {
+                background:
+                    radial-gradient(ellipse 45% 72% at 12% 100%, rgba(255,30,50,0.33)  0%, transparent 65%),
+                    radial-gradient(ellipse 30% 55% at 88% 100%, rgba(30,80,255,0.07)  0%, transparent 60%);
+            }
+            45%, 55% { background: none; }
+            56%, 100% {
+                background:
+                    radial-gradient(ellipse 30% 55% at 12% 100%, rgba(255,30,50,0.07)  0%, transparent 60%),
+                    radial-gradient(ellipse 45% 72% at 88% 100%, rgba(30,80,255,0.33)  0%, transparent 65%);
+            }
+        }
+        .card-police { animation: policeBorderFx 1.6s infinite; }
+        .card-police::before {
+            content: ''; position: absolute; inset: 0;
+            animation: policeConeFx 1.6s infinite;
+            z-index: 0; pointer-events: none;
+        }
+
+        /* ── Ваша Организация: золотое дыхание ───────────────── */
+        @keyframes orgBorderFx {
+            0%, 100% { box-shadow: 0 0 12px rgba(255,180,0,0.1);  border-color: rgba(255,180,0,0.2); }
+            50%       { box-shadow: 0 0 50px rgba(255,180,0,0.3);  border-color: rgba(255,195,0,0.5); }
+        }
+        .card-org { animation: orgBorderFx 3.5s ease-in-out infinite; }
+        .card-org::before {
+            content: ''; position: absolute; inset: 0;
+            background: radial-gradient(ellipse 82% 55% at 50% 100%, rgba(255,180,0,0.18) 0%, transparent 72%);
+            filter: blur(18px);
+            animation: orgAuraFx 3.5s ease-in-out infinite;
+            z-index: 0; pointer-events: none;
+        }
+        @keyframes orgAuraFx {
+            0%, 100% { opacity: 0.45; transform: scaleY(1); }
+            50%       { opacity: 1;    transform: scaleY(1.22); }
+        }
+
+        /* ── Семья Trehkorochkin: кровавый туман ─────────────── */
+        @keyframes mafiaBloodBorderFx {
+            0%, 100% { box-shadow: 0 0 15px rgba(150,0,18,0.2); border-color: rgba(150,0,18,0.3); }
+            50%       { box-shadow: 0 0 40px rgba(150,0,18,0.45); border-color: rgba(190,0,20,0.6); }
+        }
+        .card-mafia { animation: mafiaBloodBorderFx 4s ease-in-out infinite; }
+        .card-mafia::before {
+            content: ''; position: absolute;
+            bottom: 0; left: 0; right: 0; height: 52%;
+            background:
+                radial-gradient(ellipse 80% 60% at 50% 100%, rgba(145,0,18,0.33)  0%, transparent 68%),
+                radial-gradient(ellipse 50% 40% at 22% 100%, rgba(95,0,12,0.22)   0%, transparent 60%),
+                radial-gradient(ellipse 50% 40% at 78% 100%, rgba(110,0,15,0.22)  0%, transparent 60%);
+            filter: blur(18px);
+            animation: bloodMistFx 4s ease-in-out infinite;
+            z-index: 0; pointer-events: none;
+        }
+        @keyframes bloodMistFx {
+            0%, 100% { opacity: 0.6; transform: scaleY(1); }
+            50%       { opacity: 1;   transform: scaleY(1.2); }
+        }
+
+        /* ── Mercenary Platoon: электрическое поле + скан ────── */
+        @keyframes mercElectricBorderFx {
+            0%, 100% { box-shadow: 0 0 12px rgba(168,107,255,0.15); border-color: rgba(168,107,255,0.25); }
+            22% { box-shadow: 0 0 45px rgba(168,107,255,0.6);  border-color: rgba(200,150,255,0.75); }
+            23% { box-shadow: 0 0 5px  rgba(168,107,255,0.08); }
+            24% { box-shadow: 0 0 38px rgba(168,107,255,0.5); }
+            70% { box-shadow: 0 0 38px rgba(168,107,255,0.5);  border-color: rgba(200,150,255,0.7); }
+            71% { box-shadow: 0 0 5px  rgba(168,107,255,0.08); }
+            72% { box-shadow: 0 0 30px rgba(168,107,255,0.42); }
+        }
+        .card-merc { animation: mercElectricBorderFx 2.5s infinite; }
+        .card-merc::before {
+            content: ''; position: absolute; inset: 0;
+            background:
+                radial-gradient(ellipse 65% 30% at 50% 0%,   rgba(168,107,255,0.22) 0%, transparent 70%),
+                radial-gradient(ellipse 65% 30% at 50% 100%, rgba(168,107,255,0.18) 0%, transparent 70%);
+            animation: mercAuraFx 2.5s ease-in-out infinite;
+            z-index: 0; pointer-events: none;
+        }
+        @keyframes mercAuraFx {
+            0%, 100% { opacity: 0.5; }
+            22% { opacity: 1; filter: brightness(1.7); }
+            23% { opacity: 0.15; }
+            24% { opacity: 1; }
+            70% { opacity: 1; filter: brightness(1.5); }
+            71% { opacity: 0.15; }
+            72% { opacity: 0.9; }
+        }
+        .card-merc::after {
+            content: ''; position: absolute;
+            left: 0; right: 0; height: 35%;
+            background: linear-gradient(180deg,
+                transparent 0%, rgba(168,107,255,0.06) 35%,
+                rgba(168,107,255,0.12) 50%, rgba(168,107,255,0.06) 65%, transparent 100%
+            );
+            animation: mercScanFx 3s linear infinite;
+            z-index: 0; pointer-events: none;
+        }
+        @keyframes mercScanFx {
+            0%   { transform: translateY(-100%); }
+            100% { transform: translateY(350%); }
+        }
+
+        /* ── S.W.A.T.: ледяной прожектор + строб ─────────────── */
+        @keyframes swatStrobeFx {
+            0%, 78%, 100% { box-shadow: 0 0 12px rgba(30,144,255,0.15); border-color: rgba(30,144,255,0.25); }
+            79%  { box-shadow: 0 0 60px rgba(30,144,255,0.9), 0 0 120px rgba(30,144,255,0.35); border-color: rgba(30,144,255,1); }
+            80%  { box-shadow: 0 0 6px  rgba(30,144,255,0.06); border-color: rgba(30,144,255,0.06); }
+            81%  { box-shadow: 0 0 60px rgba(30,144,255,0.9), 0 0 120px rgba(30,144,255,0.35); border-color: rgba(30,144,255,1); }
+            82%  { box-shadow: 0 0 12px rgba(30,144,255,0.15); border-color: rgba(30,144,255,0.25); }
+        }
+        .card-swat { animation: swatStrobeFx 5s infinite; }
+        .card-swat::before {
+            content: ''; position: absolute;
+            top: 0; left: 0; right: 0; height: 58%;
+            background:
+                radial-gradient(ellipse 65% 55% at 50% 0%,  rgba(30,144,255,0.3)   0%, transparent 70%),
+                radial-gradient(ellipse 32% 35% at 18% 0%,  rgba(80,180,255,0.18)  0%, transparent 60%),
+                radial-gradient(ellipse 32% 35% at 82% 0%,  rgba(80,180,255,0.18)  0%, transparent 60%);
+            filter: blur(14px);
+            animation: frostAuraFx 3s ease-in-out infinite;
+            z-index: 0; pointer-events: none;
+        }
+        @keyframes frostAuraFx {
+            0%, 100% { opacity: 0.55; }
+            50%       { opacity: 1; filter: blur(12px) brightness(1.25); }
+        }
+        .card-swat::after {
+            content: ''; position: absolute;
+            bottom: 10px; right: 10px;
+            width: 18px; height: 18px;
+            border-bottom: 2px solid rgba(30,144,255,0.85);
+            border-right:  2px solid rgba(30,144,255,0.85);
+            z-index: 2; pointer-events: none;
+            opacity: 0; transform: translate(5px,5px);
+            transition: opacity 0.35s ease, transform 0.35s ease;
+        }
+        .card-swat:hover::after { opacity: 1; transform: translate(0,0); }
+        .swat-tl {
+            position: absolute; top: 10px; left: 10px;
+            width: 18px; height: 18px;
+            border-top:  2px solid rgba(30,144,255,0.85);
+            border-left: 2px solid rgba(30,144,255,0.85);
+            z-index: 2; pointer-events: none;
+            opacity: 0; transform: translate(-5px,-5px);
+            transition: opacity 0.35s ease, transform 0.35s ease;
+        }
+        .card-swat:hover .swat-tl { opacity: 1; transform: translate(0,0); }
     </style>
 </head>
 <body class="antialiased">
@@ -83,26 +289,26 @@
     <section class="py-24 md:py-32 px-8">
         <div class="max-w-7xl mx-auto">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div class="glass-card p-10 section-reveal">
+                <div class="glass-card card-bounty p-10 section-reveal">
                     <div class="card-bg" style="background-image: url('images/free_sector.png');"></div>
                     <h3 class="text-yellow-400 font-bold font-syncopate text-2xl mb-4">Bounty Hunters</h3>
                     <p class="text-neutral-300 leading-relaxed">Независимые наемники и охотники. Вступайте в опасные миссии за щедрые награды. Никакой верности, только деньги.</p>
                 </div>
 
-                <div class="glass-card p-10 section-reveal">
+                <div class="glass-card card-police p-10 section-reveal">
                     <div class="card-bg" style="background-image: url('images/factions.jpeg');"></div>
                     <h3 class="text-red-400 font-bold font-syncopate text-2xl mb-4">Police Department of Coruscant</h3>
                     <p class="text-neutral-300 leading-relaxed">Охраняйте закон и порядок города. Служите справедливости и получайте официальную зарплату. Честь и долг.</p>
                 </div>
 
-                <div class="glass-card p-10 section-reveal">
+                <div class="glass-card card-org p-10 section-reveal">
                     <div class="card-bg" style="background-image: url('images/terminal.png');"></div>
                     <h3 class="text-amber-400 font-bold font-syncopate text-2xl mb-4">Ваша Организация</h3>
                     <p class="text-neutral-300 leading-relaxed">Создайте или присоединитесь к своей организации. Определяйте правила, цели и структуру вместе с членами.</p>
                 </div>
 
                 <!-- Семья Trehkorochkin -->
-                <div class="glass-card p-10 section-reveal" style="border-color: rgba(255, 77, 157, 0.25);">
+                <div class="glass-card card-mafia p-10 section-reveal">
                     <div class="card-bg" style="background-image: url('images/baraholka.png');"></div>
                     <div class="flex items-center gap-3 mb-4">
                         <span class="text-2xl">🎩</span>
@@ -122,7 +328,7 @@
                 </div>
 
                 <!-- Mercenary Platoon -->
-                <div class="glass-card p-10 section-reveal" style="border-color: rgba(168, 107, 255, 0.25);">
+                <div class="glass-card card-merc p-10 section-reveal">
                     <div class="card-bg" style="background-image: url('images/customs.png');"></div>
                     <div class="flex items-center gap-3 mb-4">
                         <span class="text-2xl">⚔️</span>
@@ -142,7 +348,7 @@
                 </div>
 
                 <!-- S.W.A.T. -->
-                <div class="glass-card p-10 section-reveal" style="border-color: rgba(30, 144, 255, 0.25);">
+                <div class="glass-card card-swat p-10 section-reveal">
                     <div class="card-bg" style="background-image: url('images/factions.jpeg');"></div>
                     <div class="flex items-center gap-3 mb-4">
                         <span class="text-2xl">🛡️</span>
@@ -170,5 +376,184 @@
 
     <script src="script.js"></script>
     <script src="theme.js"></script>
+    <script>
+    (function() {
+        function rnd(min, max) { return min + Math.random() * (max - min); }
+
+        /* ── Огонь: Bounty Hunters ──────────────────────────── */
+        function spawnFire(card) {
+            var interval = setInterval(function() {
+                if (!document.contains(card)) { clearInterval(interval); return; }
+                var count = Math.random() < 0.4 ? 2 : 1;
+                for (var i = 0; i < count; i++) {
+                    var size = rnd(22, 55);
+                    var hue  = rnd(5, 35);
+                    var dur  = rnd(900, 1600);
+                    var p = document.createElement('div');
+                    p.style.cssText = [
+                        'position:absolute',
+                        'bottom:-8px',
+                        'left:' + rnd(5, 90) + '%',
+                        'width:' + size + 'px',
+                        'height:' + (size * 1.6) + 'px',
+                        'background:radial-gradient(ellipse,hsla(' + hue + ',100%,58%,0.75) 0%,hsla(' + hue + ',100%,38%,0.35) 50%,transparent 80%)',
+                        'filter:blur(' + (size * 0.28) + 'px)',
+                        'border-radius:50% 50% 35% 35%',
+                        'pointer-events:none',
+                        'z-index:0',
+                        'transform:translateX(-50%)',
+                        'animation:fireRise ' + dur + 'ms ease-out forwards'
+                    ].join(';');
+                    card.appendChild(p);
+                    setTimeout(function(el){ el.remove(); }, dur + 50, p);
+                }
+                /* маленькие угольки */
+                if (Math.random() < 0.5) {
+                    var ep = document.createElement('div');
+                    var dx = (Math.random() < 0.5 ? -1 : 1) * rnd(15, 40);
+                    ep.style.cssText = [
+                        'position:absolute',
+                        'bottom:' + rnd(0, 15) + 'px',
+                        'left:' + rnd(10, 85) + '%',
+                        'width:' + rnd(3, 6) + 'px',
+                        'height:' + rnd(3, 6) + 'px',
+                        '--dx:' + dx + 'px',
+                        'background:rgba(255,' + Math.floor(rnd(80,160)) + ',0,0.9)',
+                        'box-shadow:0 0 6px rgba(255,100,0,0.7)',
+                        'border-radius:50%',
+                        'pointer-events:none',
+                        'z-index:0',
+                        'animation:emberFloat ' + rnd(1000,1800) + 'ms ease-out forwards'
+                    ].join(';');
+                    card.appendChild(ep);
+                    setTimeout(function(el){ el.remove(); }, 1850, ep);
+                }
+            }, 130);
+        }
+
+        /* ── Кровь: Семья Trehkorochkin ─────────────────────── */
+        function spawnBlood(card) {
+            var interval = setInterval(function() {
+                if (!document.contains(card)) { clearInterval(interval); return; }
+                var w   = rnd(2, 5);
+                var dur = rnd(1400, 2200);
+                var p = document.createElement('div');
+                p.style.cssText = [
+                    'position:absolute',
+                    'top:0',
+                    'left:' + rnd(3, 92) + '%',
+                    'width:' + w + 'px',
+                    'height:0',
+                    'background:linear-gradient(180deg,rgba(180,0,18,0.85),rgba(110,0,10,0.5),transparent)',
+                    'border-radius:0 0 ' + (w * 2) + 'px ' + (w * 2) + 'px',
+                    'pointer-events:none',
+                    'z-index:0',
+                    'animation:bloodDrip ' + dur + 'ms ease-in forwards'
+                ].join(';');
+                card.appendChild(p);
+                setTimeout(function(el){ el.remove(); }, dur + 50, p);
+            }, 380);
+        }
+
+        /* ── Молнии: Mercenary Platoon ──────────────────────── */
+        function spawnSparks(card) {
+            var interval = setInterval(function() {
+                if (!document.contains(card)) { clearInterval(interval); return; }
+                var size = rnd(3, 7);
+                var dur  = rnd(180, 320);
+                var p = document.createElement('div');
+                p.style.cssText = [
+                    'position:absolute',
+                    'left:' + rnd(2, 96) + '%',
+                    'top:' + rnd(2, 96) + '%',
+                    'width:' + size + 'px',
+                    'height:' + size + 'px',
+                    'background:rgba(220,170,255,0.95)',
+                    'box-shadow:0 0 ' + (size*2) + 'px rgba(168,107,255,0.9),0 0 ' + (size*5) + 'px rgba(168,107,255,0.4)',
+                    'border-radius:50%',
+                    'pointer-events:none',
+                    'z-index:0',
+                    'animation:sparkFlash ' + dur + 'ms ease-out forwards'
+                ].join(';');
+                card.appendChild(p);
+                setTimeout(function(el){ el.remove(); }, dur + 20, p);
+            }, 280);
+        }
+
+        /* ── Золотая пыль: Ваша Организация ─────────────────── */
+        function spawnDust(card) {
+            var interval = setInterval(function() {
+                if (!document.contains(card)) { clearInterval(interval); return; }
+                var size = rnd(3, 6);
+                var dx   = (Math.random() < 0.5 ? -1 : 1) * rnd(10, 30);
+                var dur  = rnd(2000, 3200);
+                var p = document.createElement('div');
+                p.style.cssText = [
+                    'position:absolute',
+                    'bottom:' + rnd(5, 35) + '%',
+                    'left:' + rnd(5, 90) + '%',
+                    '--dx:' + dx + 'px',
+                    'width:' + size + 'px',
+                    'height:' + size + 'px',
+                    'background:rgba(255,' + Math.floor(rnd(170,215)) + ',0,0.85)',
+                    'box-shadow:0 0 ' + (size*2) + 'px rgba(255,185,0,0.65)',
+                    'border-radius:50%',
+                    'pointer-events:none',
+                    'z-index:0',
+                    'animation:dustRise ' + dur + 'ms ease-out forwards'
+                ].join(';');
+                card.appendChild(p);
+                setTimeout(function(el){ el.remove(); }, dur + 50, p);
+            }, 280);
+        }
+
+        /* ── Иней: S.W.A.T. ─────────────────────────────────── */
+        function spawnFrost(card) {
+            var interval = setInterval(function() {
+                if (!document.contains(card)) { clearInterval(interval); return; }
+                var size = rnd(2, 5);
+                var dx   = (Math.random() < 0.5 ? -1 : 1) * rnd(8, 25);
+                var dur  = rnd(2200, 3500);
+                var p = document.createElement('div');
+                p.style.cssText = [
+                    'position:absolute',
+                    'top:0',
+                    'left:' + rnd(2, 96) + '%',
+                    '--dx:' + dx + 'px',
+                    'width:' + size + 'px',
+                    'height:' + size + 'px',
+                    'background:rgba(' + Math.floor(rnd(80,130)) + ',185,255,0.85)',
+                    'box-shadow:0 0 ' + (size*3) + 'px rgba(30,144,255,0.7)',
+                    'border-radius:50%',
+                    'pointer-events:none',
+                    'z-index:0',
+                    'animation:frostFall ' + dur + 'ms linear forwards'
+                ].join(';');
+                card.appendChild(p);
+                setTimeout(function(el){ el.remove(); }, dur + 50, p);
+            }, 230);
+        }
+
+        /* ── Уголок-прицел для SWAT (top-left) ──────────────── */
+        function addSwatBracket(card) {
+            var tl = document.createElement('div');
+            tl.className = 'swat-tl';
+            card.appendChild(tl);
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            var bounty = document.querySelector('.card-bounty');
+            var mafia  = document.querySelector('.card-mafia');
+            var merc   = document.querySelector('.card-merc');
+            var org    = document.querySelector('.card-org');
+            var swat   = document.querySelector('.card-swat');
+            if (bounty) spawnFire(bounty);
+            if (mafia)  spawnBlood(mafia);
+            if (merc)   spawnSparks(merc);
+            if (org)    spawnDust(org);
+            if (swat)   { spawnFrost(swat); addSwatBracket(swat); }
+        });
+    })();
+    </script>
 </body>
 </html>
