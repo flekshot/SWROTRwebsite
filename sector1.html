@@ -345,6 +345,57 @@
             .recon-card:hover { transform: none; }
             .recon-card:hover img { transform: none; }
         }
+
+        /* ── Точка спавна ──────────────────────────────────── */
+        @keyframes spawnPulse {
+            0% { transform: scale(1); opacity: 0.9; }
+            100% { transform: scale(2.8); opacity: 0; }
+        }
+
+        .spawn-dot {
+            width: 32px;
+            height: 32px;
+            background: #FFD700;
+            border-radius: 50%;
+            border: 3px solid #fff;
+            box-shadow: 0 0 18px #FFD700, 0 0 36px rgba(255, 215, 0, 0.5);
+            position: relative;
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+        }
+
+        .spawn-ring {
+            position: absolute;
+            top: 0; left: 0;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 2px solid #FFD700;
+            animation: spawnPulse 1.8s ease-out infinite;
+        }
+
+        .spawn-ring:nth-child(2) { animation-delay: 0.6s; }
+        .spawn-ring:nth-child(3) { animation-delay: 1.2s; }
+
+        .leaflet-tooltip.spawn-tooltip {
+            background: rgba(8, 8, 22, 0.92);
+            border: 1px solid #FFD700;
+            color: #FFD700;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            padding: 4px 10px;
+            border-radius: 2px;
+            white-space: nowrap;
+            box-shadow: 0 0 14px rgba(255, 215, 0, 0.35);
+        }
+
+        .leaflet-tooltip.spawn-tooltip::before { border-top-color: #FFD700; }
     </style>
 </head>
 <body class="antialiased">
@@ -539,7 +590,7 @@
         const ZONES = {
             port:       { map: 1, coords: [[750, 100], [950, 100], [950, 700], [750, 700]],   desc: 'Главный логистический узел города. Сюда прибывают все грузы сектора.', img: 'images/port_zone.png' },
             industrial: { map: 1, coords: [[700, 750], [950, 750], [950, 1200], [700, 1200]], desc: 'Заводы и производство. Шумно, грязно и всегда есть работа.', img: 'images/industrial_zone.png' },
-            highway:    { map: 1, coords: [[300, 200], [600, 200], [600, 800], [300, 800]],   desc: 'Основная трасса сектора. Контроль над ней — контроль над логистикой.', img: 'images/zone_port.png' },
+            highway:    { map: 1, coords: [[180, 80], [720, 80], [720, 900], [180, 900]],   desc: 'Основная трасса сектора. Контроль над ней — контроль над логистикой.', img: 'images/zone_port.png' },
             police:     { map: 1, coords: [[450, 850], [600, 850], [600, 1200], [450, 1200]], desc: 'Центральный штаб правопорядка. Лучше не появляться здесь с контрабандой.', img: 'images/police_zone.png' },
             bank:       { map: 1, coords: [[350, 1400], [550, 1400], [550, 1700], [350, 1700]], desc: 'Финансовое сердце сектора. Здесь крутятся все кредиты города.', img: 'images/bank_zone.png' },
             free:       { map: 1, coords: [[100, 1000], [300, 1000], [300, 1300], [100, 1300]], desc: 'Территория для освоения. Кто первый закрепится — того и сектор.', img: 'images/free_sector.png' },
@@ -570,10 +621,23 @@
 
         // точка спавна
         const spawnIcon = L.divIcon({
-            html: '<div style="background-color: #FFD700; width: 15px; height: 15px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 10px #FFD700;"></div>',
-            iconSize: [15, 15],
+            html: `<div style="position:relative; width:32px; height:32px;">
+                <div class="spawn-ring"></div>
+                <div class="spawn-ring"></div>
+                <div class="spawn-ring"></div>
+                <div class="spawn-dot">★</div>
+            </div>`,
+            className: '',
+            iconSize: [32, 32],
+            iconAnchor: [16, 16]
         });
-        L.marker([440, 650], { icon: spawnIcon }).addTo(map).bindTooltip('Точка спавна', { direction: 'top' });
+        L.marker([440, 650], { icon: spawnIcon })
+            .addTo(map)
+            .bindTooltip('★ ТОЧКА СПАВНА', {
+                permanent: true,
+                direction: 'top',
+                className: 'spawn-tooltip'
+            });
 
         // ── Полигоны зон ──
         const polys = {};
